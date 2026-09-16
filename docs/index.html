@@ -1,4 +1,5 @@
 <title>Gebetsuhr</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Islamische Gebetsuhr mit zwei leuchtenden Ringen – Einrichtung, FAQ und Firmware-Download.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@400;500&display=swap">
 <style>
@@ -32,11 +33,18 @@
   .kopf-innen{display:flex;align-items:center;gap:14px;padding:14px 20px}
   .marke{display:flex;align-items:center;gap:10px;font-family:"Fraunces",serif;font-size:1.15rem;flex:none}
   .marke svg{width:28px;height:28px}
-  nav{display:flex;gap:18px;margin-left:auto;font-size:.86rem}
+  nav{display:flex;gap:18px;margin-left:auto;font-size:.86rem;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  nav::-webkit-scrollbar{display:none}
   nav a{color:var(--muted);text-decoration:none;white-space:nowrap}
   nav a:hover{color:var(--text)}
   .signatur{font-size:.68rem;color:var(--muted);margin-left:14px;white-space:nowrap;display:none}
   @media(min-width:680px){.signatur{display:block}}
+  @media(max-width:480px){
+    .kopf-innen{gap:8px;padding:12px 14px}
+    .marke{font-size:1rem}
+    .marke svg{width:22px;height:22px}
+    nav{gap:12px;font-size:.78rem}
+  }
 
   /* ---------- Hero ---------- */
   .hero{padding:56px 20px 44px;text-align:center;position:relative;overflow:hidden}
