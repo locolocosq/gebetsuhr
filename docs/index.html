@@ -1,0 +1,420 @@
+<title>Gebetsuhr</title>
+<meta name="description" content="Islamische Gebetsuhr mit zwei leuchtenden Ringen – Einrichtung, FAQ und Firmware-Download.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --ink:#17110b; --panel:#211a12; --panel-2:#2b2117; --line:#3a2f22;
+    --text:#f1e6d7; --muted:#a7967f; --ember:#ff8322; --ember-dim:#a85a1e;
+    --ember-glow:rgba(255,131,34,.35); --danger:#c85a42; --good:#8ba876;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --ink:#eee5d4; --panel:#faf5ea; --panel-2:#f1e9d8; --line:#ddcfb6;
+      --text:#241a10; --muted:#6e5c47; --ember:#c9591a; --ember-dim:#a04a16;
+      --ember-glow:rgba(201,89,26,.18); --danger:#a8402c; --good:#5c7a45;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#17110b; --panel:#211a12; --panel-2:#2b2117; --line:#3a2f22;
+    --text:#f1e6d7; --muted:#a7967f; --ember:#ff8322; --ember-dim:#a85a1e;
+    --ember-glow:rgba(255,131,34,.35); --danger:#c85a42; --good:#8ba876;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--ink);color:var(--text);font-family:"Work Sans",system-ui,sans-serif;line-height:1.5}
+  h1,h2,h3{font-family:"Fraunces",serif;font-weight:500;margin:0}
+  .mono{font-family:"Spline Sans Mono",monospace}
+  a{color:var(--ember)}
+  .wrap{max-width:920px;margin:0 auto;padding:0 20px}
+
+  /* ---------- Kopfzeile ---------- */
+  header{position:sticky;top:0;z-index:20;background:color-mix(in srgb, var(--ink) 88%, transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .kopf-innen{display:flex;align-items:center;gap:14px;padding:14px 20px}
+  .marke{display:flex;align-items:center;gap:10px;font-family:"Fraunces",serif;font-size:1.15rem;flex:none}
+  .marke svg{width:28px;height:28px}
+  nav{display:flex;gap:18px;margin-left:auto;font-size:.86rem}
+  nav a{color:var(--muted);text-decoration:none;white-space:nowrap}
+  nav a:hover{color:var(--text)}
+  .signatur{font-size:.68rem;color:var(--muted);margin-left:14px;white-space:nowrap;display:none}
+  @media(min-width:680px){.signatur{display:block}}
+
+  /* ---------- Hero ---------- */
+  .hero{padding:56px 20px 44px;text-align:center;position:relative;overflow:hidden}
+  .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 0%, var(--ember-glow), transparent 70%);pointer-events:none}
+  .hero-illu{width:min(76vw,240px);margin:0 auto 28px;position:relative}
+  .hero h1{font-size:clamp(1.7rem,4vw,2.5rem);text-wrap:balance;max-width:16ch;margin:0 auto}
+  .hero p{color:var(--muted);max-width:44ch;margin:14px auto 28px;font-size:1rem}
+  .cta-reihe{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  button,.btn{font-family:"Work Sans",sans-serif;font-weight:600;font-size:.88rem;border-radius:7px;border:1px solid transparent;padding:12px 20px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+  .btn-primary{background:var(--ember);color:#1a1006}
+  .btn-outline{background:transparent;border-color:var(--line);color:var(--text)}
+  .btn:disabled{opacity:.4;cursor:default}
+
+  /* ---------- Abschnitte ---------- */
+  section{padding:52px 0;border-top:1px solid var(--line)}
+  .abschnitt-kopf{text-align:center;max-width:52ch;margin:0 auto 36px}
+  .abschnitt-kopf .eyebrow{font-family:"Spline Sans Mono",monospace;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ember);display:block;margin-bottom:8px}
+  .abschnitt-kopf p{color:var(--muted);margin-top:10px}
+  .sprung{display:block;text-align:center;font-size:.8rem;color:var(--muted);margin-bottom:28px}
+
+  /* ---------- Funktion-Karten ---------- */
+  .funktion-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+  .funktion-karte{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px 20px;display:flex;flex-direction:column;gap:12px}
+  .funktion-karte svg{width:44px;height:44px}
+  .funktion-karte h3{font-size:1.05rem}
+  .funktion-karte p{margin:0;color:var(--muted);font-size:.88rem;line-height:1.6}
+
+  /* ---------- Innenring-Diagramm ---------- */
+  .innenring-figur{margin:32px auto 0;max-width:360px;text-align:center}
+  .innenring-figur svg{width:100%;height:auto}
+  .innenring-figur figcaption{margin-top:14px;font-size:.84rem;color:var(--muted);line-height:1.6}
+  .innenring-figur figcaption b{color:var(--text)}
+  .gebet-waehler{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .gebet-waehler button{font-family:"Work Sans",sans-serif;font-size:.82rem;font-weight:600;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);border-radius:20px;padding:8px 15px;cursor:pointer}
+  .gebet-waehler button.aktiv{background:var(--ember);border-color:var(--ember);color:#1a1006}
+  .prozent-regler{margin-top:22px;padding-top:18px;border-top:1px dashed var(--line);text-align:left}
+  .prozent-regler .kopf{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:8px}
+  .prozent-regler .kopf span:last-child{font-family:"Spline Sans Mono",monospace;color:var(--ember)}
+  .prozent-regler input[type=range]{width:100%}
+
+  /* ---------- Einrichtungs-Assistent ---------- */
+  .assistent{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:8px;max-width:480px;margin:0 auto}
+  .schritt-punkte{display:flex;gap:7px;justify-content:center;padding:14px 0 4px}
+  .schritt-punkt{width:8px;height:8px;border-radius:50%;background:var(--line)}
+  .schritt-punkt.aktiv{background:var(--ember)}
+  .schritt-karte{padding:22px 24px 26px;display:none;flex-direction:column;gap:12px}
+  .schritt-karte.sichtbar{display:flex}
+  .schritt-nr{font-family:"Spline Sans Mono",monospace;color:var(--ember);font-size:.78rem}
+  .schritt-karte h3{font-size:1.15rem}
+  .schritt-karte p{margin:0;color:var(--text);font-size:.92rem;line-height:1.6}
+  .schritt-karte .hinweis{font-size:.8rem;color:var(--muted)}
+  .schritt-nav{display:flex;justify-content:space-between;padding:0 24px 20px;gap:10px}
+
+  /* ---------- FAQ ---------- */
+  .faq{display:flex;flex-direction:column;gap:10px;max-width:640px;margin:0 auto}
+  .faq details{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:2px 18px}
+  .faq summary{padding:15px 0;cursor:pointer;font-family:"Fraunces",serif;font-size:1rem;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .faq summary::-webkit-details-marker{display:none}
+  .faq summary::after{content:"+";color:var(--ember);font-family:"Spline Sans Mono",monospace;font-size:1.1rem;flex:none}
+  .faq details[open] summary::after{content:"–"}
+  .faq .antwort{padding:0 0 18px;color:var(--muted);font-size:.9rem;line-height:1.65}
+
+  /* ---------- Download ---------- */
+  .download-karte{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 24px;max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:16px;text-align:center}
+  .version-pille{align-self:center;font-family:"Spline Sans Mono",monospace;font-size:.78rem;padding:4px 12px;border-radius:20px;border:1px solid var(--good);color:var(--good)}
+  .download-karte .btn-reihe{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .manuell{font-size:.82rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:14px;text-align:left}
+  .manuell code{background:var(--panel-2);padding:1px 6px;border-radius:3px}
+
+  footer{padding:36px 20px 48px;text-align:center;color:var(--muted);font-size:.78rem;border-top:1px solid var(--line)}
+  footer .marke{justify-content:center;margin-bottom:10px;color:var(--text)}
+</style>
+
+<header>
+  <div class="kopf-innen">
+    <div class="marke">
+      <svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="1.4" opacity=".5"/><circle cx="20" cy="20" r="11" stroke="currentColor" stroke-width="1.4" opacity=".7"/><path d="M20 2 A18 18 0 0 1 34.7 29.5" stroke="var(--ember)" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg>
+      Gebetsuhr
+    </div>
+    <nav>
+      <a href="#funktion">Wie's funktioniert</a>
+      <a href="#einrichtung">Einrichtung</a>
+      <a href="#faq">FAQ</a>
+      <a href="#download">Download</a>
+    </nav>
+    <span class="signatur">created by Bilal Dawud</span>
+  </div>
+</header>
+
+<section class="hero" style="border-top:none">
+  <div class="wrap">
+    <div class="hero-illu">
+      <svg viewBox="0 0 200 200" role="img" aria-label="Zwei leuchtende Ringe: der äußere, größere Ring füllt sich mit der verstrichenen Zeit des aktuellen Gebets, der innere, kleinere Ring markiert per Halbkreis welches Gebet gerade dran ist.">
+        <g id="ausRing"></g>
+        <g id="innRing"></g>
+      </svg>
+    </div>
+    <h1>Deine Gebetszeiten, auf einen Blick sichtbar</h1>
+    <p>Eine Gebetsuhr mit zwei leuchtenden Ringen statt Zahlen – berechnet die Zeiten selbst und zeigt an, wie viel vom aktuellen Gebet schon vergangen ist.</p>
+    <div class="cta-reihe">
+      <a href="#funktion" class="btn btn-outline">Wie funktioniert sie?</a>
+      <a href="#einrichtung" class="btn btn-primary">Jetzt einrichten →</a>
+    </div>
+  </div>
+</section>
+
+<section id="funktion">
+  <div class="wrap">
+    <div class="abschnitt-kopf">
+      <span class="eyebrow">Bevor es losgeht</span>
+      <h2>Wie die Uhr funktioniert</h2>
+      <p>Vier Dinge, die gut zu wissen sind, bevor du sie einrichtest.</p>
+    </div>
+    <a class="sprung" href="#einrichtung">Kenn ich schon, direkt zur Einrichtung springen →</a>
+    <div class="funktion-grid">
+      <div class="funktion-karte">
+        <svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="var(--line)" stroke-width="3"/><path d="M22 4 A18 18 0 0 1 38.5 30" fill="none" stroke="var(--ember)" stroke-width="3" stroke-linecap="round"/></svg>
+        <h3>Äußerer Ring: die Zeit</h3>
+        <p>45 LEDs füllen sich mit der Zeit, die seit Beginn des aktuellen Gebets vergangen ist. Voller Ring = das nächste Gebet steht an.</p>
+      </div>
+      <div class="funktion-karte">
+        <svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="var(--line)" stroke-width="3"/><path d="M22 4 A18 18 0 0 1 22 40" fill="none" stroke="var(--ember)" stroke-width="3"/></svg>
+        <h3>Innerer Ring: welches Gebet</h3>
+        <p>24 LEDs zeigen als Halbkreis, welches der fünf Gebete gerade läuft. Bei Isha leuchtet der ganze Ring.</p>
+      </div>
+      <div class="funktion-karte">
+        <svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="var(--line)" stroke-width="3"/><path d="M31 13 A11 11 0 0 1 31 31" fill="none" stroke="var(--ember)" stroke-width="3" stroke-linecap="round"/><path d="M13 31 A11 11 0 0 1 13 13" fill="none" stroke="var(--ember)" stroke-width="3" stroke-linecap="round"/></svg>
+        <h3>15 Minuten vorher</h3>
+        <p>Kurz vor dem Gebetswechsel wechselt die Anzeige in ein Warnmuster: zwei Punkte wachsen aufeinander zu, bis sie sich treffen. Lässt sich in den Einstellungen auch abschalten.</p>
+      </div>
+      <div class="funktion-karte">
+        <svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="10" fill="var(--ember)" opacity=".85"/><circle cx="22" cy="22" r="18" fill="none" stroke="var(--line)" stroke-width="2" stroke-dasharray="2 4"/></svg>
+        <h3>Farbe &amp; Helligkeit</h3>
+        <p>Lichtfarbe frei wählbar, Helligkeit für außen und innen getrennt einstellbar – über die Weboberfläche der Uhr, sobald sie eingerichtet ist.</p>
+      </div>
+    </div>
+
+    <figure class="innenring-figur">
+      <svg viewBox="0 0 340 305" role="img" aria-label="Zwei Ringe: der aeussere, groessere Ring fuellt sich mit dem Prozentsatz der vergangenen Zeit des aktuellen Gebets. Der innere, kleinere Ring ist in vier Viertel geteilt (oben Dhuhr, rechts Asr, unten Maghrib, links Fajr) und zeigt, welches Gebet gerade laeuft - bei Isha leuchtet der komplette innere Ring. Die Beschriftungen sitzen ausserhalb beider Ringe. Beides ist hier auswaehlbar.">
+        <g id="aussenRingProzent"></g>
+        <path id="bogenAsr" d="M208.9,111.1 A55 55 0 0 1 208.9,188.9" fill="none" stroke="var(--line)" stroke-width="13" stroke-linecap="round"/>
+        <path id="bogenMaghrib" d="M208.9,188.9 A55 55 0 0 1 131.1,188.9" fill="none" stroke="var(--line)" stroke-width="13" stroke-linecap="round"/>
+        <path id="bogenFajr" d="M131.1,188.9 A55 55 0 0 1 131.1,111.1" fill="none" stroke="var(--line)" stroke-width="13" stroke-linecap="round"/>
+        <path id="bogenDhuhr" d="M131.1,111.1 A55 55 0 0 1 208.9,111.1" fill="none" stroke="var(--line)" stroke-width="13" stroke-linecap="round"/>
+        <circle cx="170" cy="150" r="7" fill="var(--panel-2)" stroke="var(--line)"/>
+        <text x="170" y="12" text-anchor="middle" font-family="Fraunces,serif" font-size="14" fill="var(--text)">Dhuhr</text>
+        <text x="308" y="155" text-anchor="middle" font-family="Fraunces,serif" font-size="14" fill="var(--text)">Asr</text>
+        <text x="170" y="288" text-anchor="middle" font-family="Fraunces,serif" font-size="14" fill="var(--text)">Maghrib</text>
+        <text x="32" y="155" text-anchor="middle" font-family="Fraunces,serif" font-size="14" fill="var(--text)">Fajr</text>
+      </svg>
+      <div class="gebet-waehler" id="gebetWaehler">
+        <button data-gebet="fajr">Fajr</button>
+        <button data-gebet="dhuhr" class="aktiv">Dhuhr</button>
+        <button data-gebet="asr">Asr</button>
+        <button data-gebet="maghrib">Maghrib</button>
+        <button data-gebet="isha">Isha</button>
+      </div>
+      <figcaption id="innenringText">Gerade aktiv: <b>Dhuhr</b> – leuchtet oben am inneren Ring.</figcaption>
+      <div class="prozent-regler">
+        <div class="kopf"><span>Vergangene Zeit des aktuellen Gebets</span><span id="prozentWert">60%</span></div>
+        <input type="range" id="prozentRegler" min="0" max="100" value="60">
+      </div>
+    </figure>
+  </div>
+</section>
+
+<section id="einrichtung">
+  <div class="wrap">
+    <div class="abschnitt-kopf">
+      <span class="eyebrow">Ersteinrichtung</span>
+      <h2>In fünf Schritten startklar</h2>
+      <p>Genau die Schritte, die auch auf der Uhr selbst erscheinen.</p>
+    </div>
+    <div class="assistent">
+      <div class="schritt-punkte">
+        <span class="schritt-punkt aktiv" data-p="0"></span><span class="schritt-punkt" data-p="1"></span>
+        <span class="schritt-punkt" data-p="2"></span><span class="schritt-punkt" data-p="3"></span>
+        <span class="schritt-punkt" data-p="4"></span>
+      </div>
+      <div class="schritt-karte sichtbar" data-s="0">
+        <span class="schritt-nr">SCHRITT 1</span>
+        <h3>Strom anschließen</h3>
+        <p>Die Uhr startet und sucht automatisch nach einem gespeicherten WLAN. Ist noch keins hinterlegt, strahlt sie ihr eigenes Netz aus: <b class="mono">Gebetsuhr-Setup</b>. Das blaue Pulsieren zeigt, dass sie wartet.</p>
+      </div>
+      <div class="schritt-karte" data-s="1">
+        <span class="schritt-nr">SCHRITT 2</span>
+        <h3>Mit dem Hotspot verbinden</h3>
+        <p>Auf dem Handy in den WLAN-Einstellungen mit <b class="mono">Gebetsuhr-Setup</b> verbinden. Danach öffnet sich meist automatisch die Einrichtungsseite.</p>
+        <p class="hinweis">Öffnet sich nichts von selbst? Adresse <b class="mono">192.168.4.1</b> im normalen Browser aufrufen.</p>
+      </div>
+      <div class="schritt-karte" data-s="2">
+        <span class="schritt-nr">SCHRITT 3</span>
+        <h3>Namen vergeben</h3>
+        <p>Einen Namen für diese Uhr eintragen, z. B. <span class="mono">gebetsuhr-kueche</span>. Dieser Name muss im WLAN einmalig sein – wichtig, falls du mehrere Uhren einrichtest.</p>
+      </div>
+      <div class="schritt-karte" data-s="3">
+        <span class="schritt-nr">SCHRITT 4</span>
+        <h3>Mit dem Heim-WLAN verbinden</h3>
+        <p>Aus der Netzliste dein eigenes WLAN auswählen und das Passwort eingeben. Die Uhr verbindet sich und prüft, ob der gewählte Name noch frei ist.</p>
+      </div>
+      <div class="schritt-karte" data-s="4">
+        <span class="schritt-nr">SCHRITT 5</span>
+        <h3>Fertig!</h3>
+        <p>Der Hotspot schließt sich nach kurzer Zeit von selbst. Ab jetzt erreichst du die Uhr im Browser unter <span class="mono">deinname.local</span> – dort stellst du Helligkeit, Farbe und Berechnungsmethode ein.</p>
+      </div>
+      <div class="schritt-nav">
+        <button class="btn btn-outline" id="zurueckBtn" disabled>← Zurück</button>
+        <button class="btn btn-primary" id="weiterBtn">Weiter →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="abschnitt-kopf">
+      <span class="eyebrow">Häufige Fragen</span>
+      <h2>FAQ</h2>
+    </div>
+    <div class="faq">
+      <details>
+        <summary>Wie setze ich die Uhr zurück?</summary>
+        <div class="antwort">Den Taster am Gerät 10 Sekunden gedrückt halten, bis die LEDs rot aufblitzen. Danach sind alle Einstellungen (WLAN, Name, Farbe, Helligkeit) gelöscht, und beim nächsten Start erscheint wieder der Einrichtungs-Assistent. Kürzeres Drücken macht nichts.</div>
+      </details>
+      <details>
+        <summary>Was bedeuten die Farben?</summary>
+        <div class="antwort">Es gibt keine feste Bedeutung – die Lichtfarbe ist frei wählbar über die Weboberfläche der Uhr. Voreingestellt ist ein warmer Bernstein-Ton.</div>
+      </details>
+      <details>
+        <summary>Was zeigt der innere Ring genau?</summary>
+        <div class="antwort">Einen Halbkreis an einer von vier Positionen, je nachdem welches Gebet gerade läuft (Fajr, Dhuhr, Asr oder Maghrib). Bei Isha leuchtet der komplette innere Ring.</div>
+      </details>
+      <details>
+        <summary>Kann ich mehrere Uhren im selben WLAN betreiben?</summary>
+        <div class="antwort">Ja – jede Uhr bekommt bei der Einrichtung einen eigenen, einmaligen Namen (z. B. <span class="mono">gebetsuhr-kueche</span>, <span class="mono">gebetsuhr-wohnzimmer</span>) und ist dann getrennt unter <span class="mono">name.local</span> erreichbar.</div>
+      </details>
+      <details>
+        <summary>Braucht die Uhr dauerhaft Internet?</summary>
+        <div class="antwort">Nein. Die Gebetszeiten werden komplett lokal berechnet. Internet wird nur einmal gebraucht, damit die Uhr das aktuelle Datum/die Uhrzeit erfährt (per Zeitserver) – danach läuft sie auch offline weiter, solange sie durchgehend Strom hat.</div>
+      </details>
+      <details>
+        <summary>Wie aktualisiere ich die Firmware?</summary>
+        <div class="antwort">Am einfachsten über die Weboberfläche der Uhr unter „System" → „Nach Updates suchen". Alternativ manuell über den <a href="#download">Download-Bereich</a> hier auf dieser Seite.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section id="download">
+  <div class="wrap">
+    <div class="abschnitt-kopf">
+      <span class="eyebrow">Firmware</span>
+      <h2>Download</h2>
+    </div>
+    <div class="download-karte">
+      <span class="version-pille mono">Quellcode &amp; Releases auf GitHub</span>
+      <p style="margin:0;color:var(--muted);font-size:.9rem">Die Uhr sucht selbst nach neuen Versionen (Weboberfläche → System). Zum manuellen Nachschauen oder Herunterladen:</p>
+      <div class="btn-reihe">
+        <a class="btn btn-primary" href="https://github.com/locolocosq/gebetsuhr/releases" target="_blank" rel="noopener">Releases ansehen</a>
+        <a class="btn btn-outline" href="https://github.com/locolocosq/gebetsuhr" target="_blank" rel="noopener">Quellcode auf GitHub</a>
+      </div>
+      <div class="manuell">
+        Manuell aufspielen: heruntergeladene <code>.bin</code>-Datei über die Adresse <code>deinname.local/update</code> im Browser hochladen, oder den Quellcode mit der Arduino IDE selbst kompilieren.
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="marke" style="display:flex;align-items:center;gap:8px">
+    <svg viewBox="0 0 40 40" width="20" height="20" fill="none"><circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="1.4" opacity=".5"/><circle cx="20" cy="20" r="11" stroke="currentColor" stroke-width="1.4" opacity=".7"/></svg>
+    Gebetsuhr
+  </div>
+  Islamische Gebetsuhr &middot; created by Bilal Dawud
+</footer>
+
+<script>
+// ---------- Hero-Illustration: zwei Ringe aus Strichen, wie am Geraet ----------
+(function(){
+  const NS = "http://www.w3.org/2000/svg";
+  const cx=100, cy=100, outerR=82, innerR=52;
+  function ring(container, count, radius, lenFrac, aktivBis, aktivVon){
+    for(let i=0;i<count;i++){
+      const a = (i/count)*Math.PI*2 - Math.PI/2;
+      const len = radius*lenFrac;
+      const x1=cx+Math.cos(a)*(radius-len), y1=cy+Math.sin(a)*(radius-len);
+      const x2=cx+Math.cos(a)*radius, y2=cy+Math.sin(a)*radius;
+      const line=document.createElementNS(NS,"line");
+      line.setAttribute("x1",x1); line.setAttribute("y1",y1);
+      line.setAttribute("x2",x2); line.setAttribute("y2",y2);
+      line.setAttribute("stroke-width", radius===outerR?3:3.4);
+      line.setAttribute("stroke-linecap","round");
+      const aktiv = aktivVon!==undefined ? (i>=aktivVon && i<aktivBis) : (i<aktivBis);
+      line.setAttribute("stroke", aktiv ? "var(--ember)" : "var(--line)");
+      line.style.opacity = aktiv ? 1 : .45;
+      container.appendChild(line);
+    }
+  }
+  ring(document.getElementById('ausRing'), 45, outerR, .17, 30);
+  ring(document.getElementById('innRing'), 24, innerR, .22, 18, 6);
+})();
+
+// ---------- Innenring: Gebet auswaehlen ----------
+(function(){
+  const beschreibung = {
+    fajr:    { pos: "links",  bogen: ["bogenFajr"] },
+    dhuhr:   { pos: "oben",   bogen: ["bogenDhuhr"] },
+    asr:     { pos: "rechts", bogen: ["bogenAsr"] },
+    maghrib: { pos: "unten",  bogen: ["bogenMaghrib"] },
+    isha:    { pos: "ueberall (kompletter Ring)", bogen: ["bogenFajr","bogenDhuhr","bogenAsr","bogenMaghrib"] }
+  };
+  const namen = { fajr:"Fajr", dhuhr:"Dhuhr", asr:"Asr", maghrib:"Maghrib", isha:"Isha" };
+  const alleBogen = ["bogenFajr","bogenDhuhr","bogenAsr","bogenMaghrib"];
+  const text = document.getElementById('innenringText');
+  const buttons = document.querySelectorAll('#gebetWaehler button');
+
+  function zeigeGebet(gebet){
+    alleBogen.forEach(id => document.getElementById(id).setAttribute('stroke', 'var(--line)'));
+    beschreibung[gebet].bogen.forEach(id => document.getElementById(id).setAttribute('stroke', 'var(--ember)'));
+    buttons.forEach(b => b.classList.toggle('aktiv', b.dataset.gebet === gebet));
+    text.innerHTML = gebet === 'isha'
+      ? "Gerade aktiv: <b>Isha</b> – der komplette innere Ring leuchtet."
+      : "Gerade aktiv: <b>" + namen[gebet] + "</b> – leuchtet " + beschreibung[gebet].pos + " am inneren Ring.";
+  }
+  buttons.forEach(b => b.addEventListener('click', () => zeigeGebet(b.dataset.gebet)));
+  zeigeGebet('dhuhr');
+
+  // ---------- Aussenring: Prozent-Fortschritt ----------
+  const NS2 = "http://www.w3.org/2000/svg";
+  const acx=170, acy=150, aussenR=115, N_TICKS=45;
+  const aussenGruppe = document.getElementById('aussenRingProzent');
+  const ticks = [];
+  for(let i=0;i<N_TICKS;i++){
+    const a = (i/N_TICKS)*Math.PI*2 - Math.PI/2;
+    const len = aussenR*0.14;
+    const x1=acx+Math.cos(a)*(aussenR-len), y1=acy+Math.sin(a)*(aussenR-len);
+    const x2=acx+Math.cos(a)*aussenR, y2=acy+Math.sin(a)*aussenR;
+    const line=document.createElementNS(NS2,"line");
+    line.setAttribute("x1",x1); line.setAttribute("y1",y1);
+    line.setAttribute("x2",x2); line.setAttribute("y2",y2);
+    line.setAttribute("stroke-width","4.5");
+    line.setAttribute("stroke-linecap","round");
+    line.setAttribute("stroke","var(--line)");
+    aussenGruppe.appendChild(line);
+    ticks.push(line);
+  }
+  const regler = document.getElementById('prozentRegler');
+  const reglerWert = document.getElementById('prozentWert');
+  function zeigeProzent(p){
+    reglerWert.textContent = p + "%";
+    const an = Math.round(p/100*N_TICKS);
+    ticks.forEach((t,i)=>{
+      t.setAttribute("stroke", i<an ? "var(--ember)" : "var(--line)");
+      t.style.opacity = i<an ? 1 : .45;
+    });
+  }
+  regler.addEventListener('input', ()=>zeigeProzent(regler.value));
+  zeigeProzent(regler.value);
+})();
+
+// ---------- Einrichtungs-Assistent ----------
+(function(){
+  const N = 5;
+  let aktuell = 0;
+  const punkte = document.querySelectorAll('.schritt-punkt');
+  const karten = document.querySelectorAll('.schritt-karte');
+  const zurueck = document.getElementById('zurueckBtn');
+  const weiter = document.getElementById('weiterBtn');
+  function zeige(i){
+    aktuell = i;
+    karten.forEach(k=>k.classList.toggle('sichtbar', +k.dataset.s === i));
+    punkte.forEach(p=>p.classList.toggle('aktiv', +p.dataset.p === i));
+    zurueck.disabled = i===0;
+    weiter.textContent = i===N-1 ? "Fertig ✓" : "Weiter →";
+    weiter.disabled = i===N-1;
+  }
+  zurueck.addEventListener('click', ()=>{ if(aktuell>0) zeige(aktuell-1); });
+  weiter.addEventListener('click', ()=>{ if(aktuell<N-1) zeige(aktuell+1); });
+  punkte.forEach(p=>p.addEventListener('click', ()=>zeige(+p.dataset.p)));
+})();
+</script>
