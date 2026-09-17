@@ -32,7 +32,7 @@
 // ============================================================
 //  Firmware-Version und Update-Quelle
 // ============================================================
-#define FIRMWARE_VERSION "0.6.5"
+#define FIRMWARE_VERSION "0.6.6"
 // HIER SPAETER AUSFUELLEN, sobald das GitHub-Repo mit Releases steht.
 // Erwartetes Format der Datei: {"version":"0.5.1","url":"https://.../firmware.bin"}
 const char* GITHUB_VERSION_URL = "https://raw.githubusercontent.com/locolocosq/gebetsuhr/master/version.json";
@@ -883,14 +883,14 @@ bool versucheGeolocation(const char* url, String &antwort) {
   http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
 
   if (!http.begin(client, url)) {
-    antwort = "{\"ok\":false,\"fehler\":\"http.begin() fehlgeschlagen (" + String(url) + ")\"}";
+    antwort = "{\"ok\":false,\"fehler\":\"http.begin() fehlgeschlagen (" + String(url) + ")" + jsonEscape(heapInfo()) + "\"}";
     return false;
   }
 
   int code = http.GET();
   if (code != 200) {
     antwort = "{\"ok\":false,\"fehler\":\"HTTP-Code " + String(code) + " (" + jsonEscape(http.errorToString(code)) +
-              ") von " + String(url) + "\"}";
+              ") von " + String(url) + jsonEscape(heapInfo()) + "\"}";
     http.end();
     return false;
   }
@@ -962,6 +962,14 @@ String jsonWert(const String &body, const String &feld) {
   return body.substring(p, ende);
 }
 
+// Diagnose-Zusatz fuer Verbindungsfehler: "connection refused" kann an
+// Speicherfragmentierung liegen (WiFiClientSecure/BearSSL braucht einen
+// grossen zusammenhaengenden Block, der nach langer Laufzeit fehlen kann).
+String heapInfo() {
+  return " [Heap frei: " + String(ESP.getFreeHeap()) + " Bytes, groesster Block: " +
+         String(ESP.getMaxAllocHeap()) + " Bytes]";
+}
+
 void handleUpdateCheck() {
   String antwort = "{\"verfuegbar\":false,\"version\":\"" FIRMWARE_VERSION "\",\"fehler\":\"kein WLAN verbunden\"}";
   letzteUpdateUrl = "";
@@ -998,11 +1006,12 @@ void handleUpdateCheck() {
       } else {
         Serial.print("Update-Check HTTP-Code: "); Serial.println(code);
         antwort = "{\"verfuegbar\":false,\"version\":\"" FIRMWARE_VERSION "\",\"fehler\":\"HTTP-Code " + String(code) +
-                  " (" + jsonEscape(https.errorToString(code)) + ")\"}";
+                  " (" + jsonEscape(https.errorToString(code)) + ")" + jsonEscape(heapInfo()) + "\"}";
       }
       https.end();
     } else {
-      antwort = "{\"verfuegbar\":false,\"version\":\"" FIRMWARE_VERSION "\",\"fehler\":\"https.begin() fehlgeschlagen\"}";
+      antwort = "{\"verfuegbar\":false,\"version\":\"" FIRMWARE_VERSION "\",\"fehler\":\"https.begin() fehlgeschlagen" +
+                jsonEscape(heapInfo()) + "\"}";
     }
   }
   server.send(200, "application/json", antwort);
