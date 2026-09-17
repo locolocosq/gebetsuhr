@@ -32,7 +32,7 @@
 // ============================================================
 //  Firmware-Version und Update-Quelle
 // ============================================================
-#define FIRMWARE_VERSION "0.6.3"
+#define FIRMWARE_VERSION "0.6.4"
 // HIER SPAETER AUSFUELLEN, sobald das GitHub-Repo mit Releases steht.
 // Erwartetes Format der Datei: {"version":"0.5.1","url":"https://.../firmware.bin"}
 const char* GITHUB_VERSION_URL = "https://raw.githubusercontent.com/locolocosq/gebetsuhr/master/version.json";
@@ -867,6 +867,82 @@ void handleTestAnzeige() {
   FastLED.show();
 }
 
+// Versucht eine IP-Geolocation-Abfrage bei einer bestimmten URL (ipwho.is und
+// ipapi.co liefern beide "latitude"/"longitude"/"city" im selben Format,
+// daher reicht dieselbe Parser-Logik fuer beide). Bei Erfolg steht das
+// fertige JSON fuer die Weboberflaeche in antwort und die Funktion gibt
+// true zurueck; bei Fehlschlag steht die Fehlermeldung drin und es kommt
+// false zurueck.
+bool versucheGeolocation(const char* url, String &antwort) {
+  WiFiClientSecure client;
+  client.setInsecure();
+  client.setTimeout(5000);
+  HTTPClient http;
+  http.setConnectTimeout(5000);
+  http.setTimeout(5000);
+  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+
+  if (!http.begin(client, url)) {
+    antwort = "{\"ok\":false,\"fehler\":\"http.begin() fehlgeschlagen (" + String(url) + ")\"}";
+    return false;
+  }
+
+  int code = http.GET();
+  if (code != 200) {
+    antwort = "{\"ok\":false,\"fehler\":\"HTTP-Code " + String(code) + " (" + jsonEscape(http.errorToString(code)) +
+              ") von " + String(url) + "\"}";
+    http.end();
+    return false;
+  }
+
+  String body = http.getString();
+  http.end();
+
+  int latPos = body.indexOf("\"latitude\":");
+  int lonPos = body.indexOf("\"longitude\":");
+  if (latPos < 0 || lonPos < 0) {
+    antwort = "{\"ok\":false,\"fehler\":\"kein latitude/longitude in Antwort von " + String(url) + "\"}";
+    return false;
+  }
+
+  double lat = body.substring(latPos + 11, body.indexOf(",", latPos)).toDouble();
+  double lon = body.substring(lonPos + 12, body.indexOf(",", lonPos)).toDouble();
+  String stadt = jsonWert(body, "city");
+  antwort = "{\"ok\":true,\"breite\":" + String(lat, 4) +
+             ",\"laenge\":" + String(lon, 4) + ",\"ort\":\"" + jsonEscape(stadt) + "\"}";
+  return true;
+}
+
+// Standort per IP-Geolocation: erst ipwho.is (2 Versuche, falls die
+// Verbindung mal abgelehnt wird), dann ipapi.co als zweiter Anbieter, falls
+// ipwho.is gar nicht will. Der letzte Fehler wird zurueckgegeben, falls
+// wirklich alle drei Versuche scheitern.
+void handleStandort() {
+  if (WiFi.status() != WL_CONNECTED) {
+    server.send(200, "application/json", "{\"ok\":false,\"fehler\":\"kein WLAN verbunden\"}");
+    return;
+  }
+
+  String antwort;
+  if (versucheGeolocation("https://ipwho.is/", antwort)) {
+    server.send(200, "application/json", antwort);
+    return;
+  }
+  Serial.println("Standort: ipwho.is fehlgeschlagen, versuche erneut...");
+  if (versucheGeolocation("https://ipwho.is/", antwort)) {
+    server.send(200, "application/json", antwort);
+    return;
+  }
+  Serial.println("Standort: ipwho.is zweimal fehlgeschlagen, versuche ipapi.co...");
+  if (versucheGeolocation("https://ipapi.co/json/", antwort)) {
+    server.send(200, "application/json", antwort);
+    return;
+  }
+
+  Serial.println("Standort: alle Versuche fehlgeschlagen");
+  server.send(200, "application/json", antwort);
+}
+
 String letzteUpdateUrl = "";
 
 // Liest ein Text-Feld aus einem JSON-String, unabhaengig davon ob nach dem
@@ -1046,6 +1122,7 @@ void setup() {
   server.on("/updateinstall", HTTP_POST, handleUpdateInstall);
   server.on("/testwarnung", HTTP_POST, handleTestWarnung);
   server.on("/testanzeige", HTTP_POST, handleTestAnzeige);
+  server.on("/standort", handleStandort);
   server.onNotFound(handleRoot);   // fuer Captive-Portal-Erkennung: alles zeigt unsere Seite
   ElegantOTA.begin(&server);   // manueller Update-Weg unter /update
   server.begin();

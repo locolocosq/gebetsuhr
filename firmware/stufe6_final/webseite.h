@@ -142,8 +142,8 @@ footer{text-align:center;font-size:.68rem;color:var(--muted);font-family:"Spline
       <div class="slider-zeile"><label class="feld-label">Breite</label><input type="text" id="breite"></div>
       <div class="slider-zeile"><label class="feld-label">Laenge</label><input type="text" id="laenge"></div>
     </div>
-    <button class="btn-outline btn-block" id="standortBtn">Standort dieses Geräts ermitteln</button>
-    <div class="unterzeile">Fragt den Standort von diesem Handy/Computer ab (Browser fragt um Erlaubnis), nicht von der Uhr selbst. Funktioniert eventuell nicht bei jedem Browser über eine http://-Adresse.</div>
+    <button class="btn-outline btn-block" id="standortBtn" disabled>Standort automatisch ermitteln</button>
+    <div class="unterzeile">Braucht WLAN-Verbindung (schaetzt den Ort anhand der Internetadresse, staedtegenau)</div>
     <div class="unterzeile mono" id="standortFehler" style="color:var(--danger)" hidden></div>
     <div class="slider-zeile"><span class="feld-label">Asr-Berechnung</span>
       <div class="toggle-gruppe" id="asrGruppe"><button data-asr="0">Standard</button><button data-asr="1">Hanafi</button></div>
@@ -244,6 +244,7 @@ function ladeStatus(){
       document.getElementById('gebetRest').textContent = Math.round(s.anteil*100)+" % · noch "+h+"h "+m+"min";
     }
     document.getElementById('ort').textContent = s.wlanVerbunden ? ("Verbunden: "+s.ssid) : "Nicht verbunden";
+    document.getElementById('standortBtn').disabled = !s.wlanVerbunden;
     document.getElementById('zFajr').textContent = s.zeiten.fajr;
     document.getElementById('zSonnenaufgang').textContent = s.zeiten.sonnenaufgang;
     document.getElementById('zDhuhr').textContent = s.zeiten.dhuhr;
@@ -365,26 +366,22 @@ document.getElementById('standortBtn').addEventListener('click', function(){
   const btn = this;
   const fehlerZeile = document.getElementById('standortFehler');
   fehlerZeile.hidden = true;
-
-  if (!navigator.geolocation) {
-    fehlerZeile.textContent = "Fehlercode: Dieser Browser unterstützt keine Standortermittlung.";
-    fehlerZeile.hidden = false;
-    return;
-  }
-
   btn.textContent = "Ermittle…";
-  navigator.geolocation.getCurrentPosition(function(pos){
-    document.getElementById('breite').value = pos.coords.latitude.toFixed(4);
-    document.getElementById('laenge').value = pos.coords.longitude.toFixed(4);
-    btn.textContent = "Gefunden – jetzt speichern";
-  }, function(err){
-    btn.textContent = "Standort dieses Geräts ermitteln";
-    const gruende = {1:"Zugriff verweigert", 2:"Standort nicht verfügbar", 3:"Zeitüberschreitung"};
-    const grund = gruende[err.code] || err.message;
-    fehlerZeile.textContent = "Fehlercode: " + grund +
-      " (manche Browser erlauben Standortermittlung nur über https, nicht über http://" + location.hostname + ")";
+  fetch('/standort').then(r=>r.json()).then(d=>{
+    if(d.ok){
+      document.getElementById('breite').value = d.breite;
+      document.getElementById('laenge').value = d.laenge;
+      btn.textContent = d.ort ? ("Gefunden: "+d.ort+" – jetzt speichern") : "Gefunden – jetzt speichern";
+    } else {
+      btn.textContent = "Fehlgeschlagen, bitte manuell eintragen";
+      fehlerZeile.textContent = "Fehlercode: " + (d.fehler || "unbekannt");
+      fehlerZeile.hidden = false;
+    }
+  }).catch((e)=>{
+    btn.textContent = "Fehlgeschlagen, bitte manuell eintragen";
+    fehlerZeile.textContent = "Fehlercode: Anfrage fehlgeschlagen (" + e + ")";
     fehlerZeile.hidden = false;
-  }, { timeout: 10000, enableHighAccuracy: true });
+  });
 });
 
 // ---------- Berechnung ----------
