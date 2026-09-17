@@ -54,7 +54,7 @@ CRGB leds[N_GESAMT];
 const int VERSATZ_AUSSEN = 23;   // LED 0 sitzt unten, das hier dreht den Bogen auf "oben"
 const int VERSATZ_INNEN  = 0;    // Korrektur ueber Offset (12) hat Dhuhr/Maghrib nicht behoben, zurueckgesetzt
 const bool ZEIGE_REST = false;   // false = verstrichene Zeit leuchtet (fuellt sich)
-const int HALB_START[4] = {12, 6, 0, 18};  // Fajr li, Dhuhr oben, Asr re, Maghrib unten
+const int HALB_START[4] = {0, 6, 12, 18};  // Fajr re, Dhuhr oben, Asr li, Maghrib unten (Fajr/Asr getauscht)
 
 // ============================================================
 //  Einstellungen (persistiert in NVS, ueber die Webseite änderbar)
@@ -867,60 +867,6 @@ void handleTestAnzeige() {
   FastLED.show();
 }
 
-void handleStandort() {
-  String antwort;
-
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("Standort: kein WLAN verbunden");
-    server.send(200, "application/json", "{\"ok\":false,\"fehler\":\"kein WLAN verbunden\"}");
-    return;
-  }
-
-  Serial.println("Standort: starte Anfrage an ipwho.is (HTTPS) ...");
-
-  WiFiClientSecure client;
-  client.setInsecure();             // wie beim Update-Check, kein Root-Zertifikat noetig
-  client.setTimeout(5000);
-  HTTPClient http;
-  http.setConnectTimeout(5000);
-  http.setTimeout(5000);
-  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
-
-  if (!http.begin(client, "https://ipwho.is/")) {
-    Serial.println("Standort: http.begin() fehlgeschlagen (URL/Verbindung)");
-    server.send(200, "application/json", "{\"ok\":false,\"fehler\":\"http.begin() fehlgeschlagen\"}");
-    return;
-  }
-
-  int code = http.GET();
-  Serial.print("Standort: HTTP-Code "); Serial.println(code);
-
-  if (code == 200) {
-    String body = http.getString();
-    Serial.print("Standort: Antwort "); Serial.println(body);
-
-    int latPos = body.indexOf("\"latitude\":");
-    int lonPos = body.indexOf("\"longitude\":");
-    if (latPos >= 0 && lonPos >= 0) {
-      double lat = body.substring(latPos + 11, body.indexOf(",", latPos)).toDouble();
-      double lon = body.substring(lonPos + 12, body.indexOf(",", lonPos)).toDouble();
-      String stadt = jsonWert(body, "city");
-      antwort = "{\"ok\":true,\"breite\":" + String(lat, 4) +
-                 ",\"laenge\":" + String(lon, 4) + ",\"ort\":\"" + jsonEscape(stadt) + "\"}";
-    } else {
-      Serial.println("Standort: \"latitude\"/\"longitude\" nicht in der Antwort gefunden");
-      antwort = "{\"ok\":false,\"fehler\":\"HTTP 200, aber kein latitude/longitude in der Antwort: " +
-                jsonEscape(body.substring(0, 120)) + "\"}";
-    }
-  } else {
-    Serial.print("Standort: Fehlertext "); Serial.println(http.errorToString(code));
-    antwort = "{\"ok\":false,\"fehler\":\"HTTP-Code " + String(code) + " (" + jsonEscape(http.errorToString(code)) + ")\"}";
-  }
-  http.end();
-
-  server.send(200, "application/json", antwort);
-}
-
 String letzteUpdateUrl = "";
 
 // Liest ein Text-Feld aus einem JSON-String, unabhaengig davon ob nach dem
@@ -1098,7 +1044,6 @@ void setup() {
   server.on("/reset", HTTP_POST, handleReset);
   server.on("/updatecheck", handleUpdateCheck);
   server.on("/updateinstall", HTTP_POST, handleUpdateInstall);
-  server.on("/standort", handleStandort);
   server.on("/testwarnung", HTTP_POST, handleTestWarnung);
   server.on("/testanzeige", HTTP_POST, handleTestAnzeige);
   server.onNotFound(handleRoot);   // fuer Captive-Portal-Erkennung: alles zeigt unsere Seite

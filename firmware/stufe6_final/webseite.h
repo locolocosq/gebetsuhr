@@ -142,8 +142,8 @@ footer{text-align:center;font-size:.68rem;color:var(--muted);font-family:"Spline
       <div class="slider-zeile"><label class="feld-label">Breite</label><input type="text" id="breite"></div>
       <div class="slider-zeile"><label class="feld-label">Laenge</label><input type="text" id="laenge"></div>
     </div>
-    <button class="btn-outline btn-block" id="standortBtn" disabled>Standort automatisch ermitteln</button>
-    <div class="unterzeile">Braucht WLAN-Verbindung (schaetzt den Ort anhand der Internetadresse, staedtegenau)</div>
+    <button class="btn-outline btn-block" id="standortBtn">Standort dieses Geräts ermitteln</button>
+    <div class="unterzeile">Fragt den Standort von diesem Handy/Computer ab (Browser fragt um Erlaubnis), nicht von der Uhr selbst. Funktioniert eventuell nicht bei jedem Browser über eine http://-Adresse.</div>
     <div class="unterzeile mono" id="standortFehler" style="color:var(--danger)" hidden></div>
     <div class="slider-zeile"><span class="feld-label">Asr-Berechnung</span>
       <div class="toggle-gruppe" id="asrGruppe"><button data-asr="0">Standard</button><button data-asr="1">Hanafi</button></div>
@@ -214,10 +214,11 @@ function ringZeichnen(status){
   const c = document.getElementById('farbPicker').value;
   const an = Math.round(status.anteil * 45); // verstrichene Zeit, wie am Geraet selbst
   [...aussenTicks.children].forEach((l,i)=>{ l.setAttribute("stroke", i<an?c:linieFarbe); l.style.opacity = i<an?1:.35; });
-  const halbStart=[12,6,0,18];
+  const halbStart=[0,6,12,18];
   [...innenTicks.children].forEach((l,i)=>{
     let an2;
-    if(status.idx===4) an2 = true;
+    if(status.keinGebet) an2 = false;
+    else if(status.idx===4) an2 = true;
     else { const s=halbStart[status.idx]; an2 = (i>=s && i<s+12); }
     l.setAttribute("stroke", an2?c:linieFarbe); l.style.opacity = an2?.8:.3;
   });
@@ -234,9 +235,14 @@ function setzeWennNichtFokus(id, wert){
 
 function ladeStatus(){
   fetch('/status').then(r=>r.json()).then(s=>{
-    document.getElementById('gebetName').textContent = s.gebet;
     const h = Math.floor(s.restMin/60), m = s.restMin%60;
-    document.getElementById('gebetRest').textContent = Math.round(s.anteil*100)+" % · noch "+h+"h "+m+"min";
+    if (s.keinGebet) {
+      document.getElementById('gebetName').textContent = "–";
+      document.getElementById('gebetRest').textContent = Math.round(s.anteil*100)+" % bis Dhuhr · noch "+h+"h "+m+"min";
+    } else {
+      document.getElementById('gebetName').textContent = s.gebet;
+      document.getElementById('gebetRest').textContent = Math.round(s.anteil*100)+" % · noch "+h+"h "+m+"min";
+    }
     document.getElementById('ort').textContent = s.wlanVerbunden ? ("Verbunden: "+s.ssid) : "Nicht verbunden";
     document.getElementById('zFajr').textContent = s.zeiten.fajr;
     document.getElementById('zSonnenaufgang').textContent = s.zeiten.sonnenaufgang;
@@ -262,7 +268,6 @@ function ladeStatus(){
     document.getElementById('fwVersion').textContent = s.version;
     document.querySelectorAll('#asrGruppe button').forEach(b=>b.classList.toggle('aktiv', (b.dataset.asr==="1")===s.asrHanafi));
     document.querySelectorAll('#warnungGruppe button').forEach(b=>b.classList.toggle('aktiv', (b.dataset.warnung==="1")===s.warnung));
-    document.getElementById('standortBtn').disabled = !s.wlanVerbunden;
     ringZeichnen(s);
   }).catch(()=>{});
 }
@@ -355,27 +360,31 @@ document.getElementById('testAnzeigenBtn').addEventListener('click', function(){
     });
 });
 
-// ---------- Standort automatisch ----------
+// ---------- Standort dieses Geraets (Browser-Geolocation, nicht die Uhr) ----------
 document.getElementById('standortBtn').addEventListener('click', function(){
   const btn = this;
   const fehlerZeile = document.getElementById('standortFehler');
   fehlerZeile.hidden = true;
-  btn.textContent = "Ermittle…";
-  fetch('/standort').then(r=>r.json()).then(d=>{
-    if(d.ok){
-      document.getElementById('breite').value = d.breite;
-      document.getElementById('laenge').value = d.laenge;
-      btn.textContent = d.ort ? ("Gefunden: "+d.ort+" – jetzt speichern") : "Gefunden – jetzt speichern";
-    } else {
-      btn.textContent = "Fehlgeschlagen, bitte manuell eintragen";
-      fehlerZeile.textContent = "Fehlercode: " + (d.fehler || "unbekannt");
-      fehlerZeile.hidden = false;
-    }
-  }).catch((e)=>{
-    btn.textContent = "Fehlgeschlagen, bitte manuell eintragen";
-    fehlerZeile.textContent = "Fehlercode: Anfrage fehlgeschlagen (" + e + ")";
+
+  if (!navigator.geolocation) {
+    fehlerZeile.textContent = "Fehlercode: Dieser Browser unterstützt keine Standortermittlung.";
     fehlerZeile.hidden = false;
-  });
+    return;
+  }
+
+  btn.textContent = "Ermittle…";
+  navigator.geolocation.getCurrentPosition(function(pos){
+    document.getElementById('breite').value = pos.coords.latitude.toFixed(4);
+    document.getElementById('laenge').value = pos.coords.longitude.toFixed(4);
+    btn.textContent = "Gefunden – jetzt speichern";
+  }, function(err){
+    btn.textContent = "Standort dieses Geräts ermitteln";
+    const gruende = {1:"Zugriff verweigert", 2:"Standort nicht verfügbar", 3:"Zeitüberschreitung"};
+    const grund = gruende[err.code] || err.message;
+    fehlerZeile.textContent = "Fehlercode: " + grund +
+      " (manche Browser erlauben Standortermittlung nur über https, nicht über http://" + location.hostname + ")";
+    fehlerZeile.hidden = false;
+  }, { timeout: 10000, enableHighAccuracy: true });
 });
 
 // ---------- Berechnung ----------
