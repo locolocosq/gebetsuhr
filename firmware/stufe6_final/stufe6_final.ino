@@ -32,7 +32,7 @@
 // ============================================================
 //  Firmware-Version und Update-Quelle
 // ============================================================
-#define FIRMWARE_VERSION "0.6.0"
+#define FIRMWARE_VERSION "0.6.1"
 // HIER SPAETER AUSFUELLEN, sobald das GitHub-Repo mit Releases steht.
 // Erwartetes Format der Datei: {"version":"0.5.1","url":"https://.../firmware.bin"}
 const char* GITHUB_VERSION_URL = "https://raw.githubusercontent.com/locolocosq/gebetsuhr/master/version.json";
@@ -52,7 +52,7 @@ const char* GITHUB_VERSION_URL = "https://raw.githubusercontent.com/locolocosq/g
 CRGB leds[N_GESAMT];
 
 const int VERSATZ_AUSSEN = 23;   // LED 0 sitzt unten, das hier dreht den Bogen auf "oben"
-const int VERSATZ_INNEN  = 12;   // Innenring sass verkehrt herum (oben/unten vertauscht) -> halber Ring als Korrektur
+const int VERSATZ_INNEN  = 0;    // Korrektur ueber Offset (12) hat Dhuhr/Maghrib nicht behoben, zurueckgesetzt
 const bool ZEIGE_REST = false;   // false = verstrichene Zeit leuchtet (fuellt sich)
 const int HALB_START[4] = {12, 6, 0, 18};  // Fajr li, Dhuhr oben, Asr re, Maghrib unten
 
@@ -113,7 +113,7 @@ const Methode METHODEN[6] = {
 //  Astronomie
 // ============================================================
 double zeiten[6];    // Stunden UTC
-int    grenzen[6];   // Ortszeit-Minuten: Fajr Dhuhr Asr Maghrib Isha FajrMorgen
+int    grenzen[7];   // Ortszeit-Minuten: Fajr Sonnenaufgang Dhuhr Asr Maghrib Isha FajrMorgen
 int    heutigeZeitenMin[6];  // Ortszeit-Minuten, gleiche Reihenfolge wie NAMEN[]: Fajr Sonnenaufgang Dhuhr Asr Maghrib Isha
 int    letzterTag = -1;
 
@@ -229,8 +229,10 @@ void neuBerechnen(struct tm &t, double tz) {
   int fajrMorgen = alsMinuten(zeiten[0], tz) + 1440;
   rechne(j, m, d);
 
-  grenzen[0] = heute[0]; grenzen[1] = heute[2]; grenzen[2] = heute[3];
-  grenzen[3] = heute[4]; grenzen[4] = heute[5]; grenzen[5] = fajrMorgen;
+  // heute[]: Fajr Sonnenaufgang Dhuhr Asr Maghrib Isha (Reihenfolge von NAMEN[])
+  grenzen[0] = heute[0]; grenzen[1] = heute[1]; grenzen[2] = heute[2];
+  grenzen[3] = heute[3]; grenzen[4] = heute[4]; grenzen[5] = heute[5];
+  grenzen[6] = fajrMorgen;
   letzterTag = d;
 }
 
@@ -240,6 +242,7 @@ void neuBerechnen(struct tm &t, double tz) {
 int    aktIdx = 4;
 double aktAnteil = 0;
 int    aktRestMin = 0;
+bool   aktKeinGebet = false;   // true: Luecke zwischen Sonnenaufgang und Dhuhr, kein Gebet gerade aktiv
 
 // Innenring: welches Gebet, unveraendert egal ob normale Anzeige oder
 // 15-Minuten-Warnung im Aussenring gerade laeuft.
@@ -329,32 +332,49 @@ void aktualisieren() {
 
   int jetzt = t.tm_hour * 60 + t.tm_min;
   int idx, start, ende;
+  bool keinGebet = false;
 
   if (jetzt < grenzen[0]) {
-    idx = 4; start = grenzen[4] - 1440; ende = grenzen[0];
-  } else {
+    // Vor Fajr: noch die Nacht-Isha von gestern
+    idx = 4; start = grenzen[5] - 1440; ende = grenzen[0];
+  } else if (jetzt < grenzen[1]) {
+    // Fajr bis Sonnenaufgang
     idx = 0; start = grenzen[0]; ende = grenzen[1];
-    for (int i = 4; i >= 0; i--) {
-      if (jetzt >= grenzen[i]) { idx = i; start = grenzen[i]; ende = grenzen[i + 1]; break; }
-    }
+  } else if (jetzt < grenzen[2]) {
+    // Sonnenaufgang bis Dhuhr: kein Gebet gerade aktiv, Ringe bleiben aus
+    // (bis auf die 15-Min-Vorwarnung auf das kommende Dhuhr)
+    keinGebet = true; idx = 1; start = grenzen[1]; ende = grenzen[2];
+  } else if (jetzt < grenzen[3]) {
+    idx = 1; start = grenzen[2]; ende = grenzen[3];
+  } else if (jetzt < grenzen[4]) {
+    idx = 2; start = grenzen[3]; ende = grenzen[4];
+  } else if (jetzt < grenzen[5]) {
+    idx = 3; start = grenzen[4]; ende = grenzen[5];
+  } else {
+    idx = 4; start = grenzen[5]; ende = grenzen[6];
   }
 
   double anteil = (double)(jetzt - start) / (double)(ende - start);
   if (anteil < 0) anteil = 0;
   if (anteil > 1) anteil = 1;
 
-  aktIdx = idx; aktAnteil = anteil; aktRestMin = ende - jetzt;
+  aktIdx = idx; aktAnteil = anteil; aktRestMin = ende - jetzt; aktKeinGebet = keinGebet;
+  bool baldWarnung = warnungAktiv && aktRestMin > 0 && aktRestMin <= 15;
 
-  // Gebet hat gerade gewechselt (und es ist nicht der allererste Aufruf
-  // nach dem Einschalten): kurze Abwickel-Animation statt hartem Sprung.
-  if (letzterGezeigterIdx != -1 && letzterGezeigterIdx != idx) {
+  // Gebet hat gerade gewechselt (und es ist nicht der allererste Aufruf nach
+  // dem Einschalten): kurze Abwickel-Animation statt hartem Sprung. Nicht
+  // beim Eintreten in die gebetslose Luecke (da geht's einfach dunkel).
+  int anzeigeSchluessel = keinGebet ? -1 : idx;
+  if (letzterGezeigterIdx != -1 && letzterGezeigterIdx != anzeigeSchluessel && !keinGebet) {
     spieleAbwickelAnimation(idx);
   }
-  letzterGezeigterIdx = idx;
+  letzterGezeigterIdx = anzeigeSchluessel;
 
-  if (warnungAktiv && aktRestMin > 0 && aktRestMin <= 15) {
+  if (baldWarnung) {
     double anteilGewarnt = (15.0 - aktRestMin) / 15.0;
     anzeigenWarnung(idx, anteilGewarnt);
+  } else if (keinGebet) {
+    fill_solid(leds, N_GESAMT, CRGB::Black);
   } else {
     anzeigen(idx, anteil);
   }
@@ -620,6 +640,7 @@ void handleStatus() {
   json += "\"isha\":\"" + zeitAlsText(heutigeZeitenMin[5]) + "\"";
   json += "},";
   json += "\"gebet\":\"" + String(GEBETE[aktIdx]) + "\",";
+  json += "\"keinGebet\":" + String(aktKeinGebet ? "true" : "false") + ",";
   json += "\"anteil\":" + String(aktAnteil, 4) + ",";
   json += "\"restMin\":" + String(aktRestMin) + ",";
   json += "\"idx\":" + String(aktIdx) + ",";
@@ -669,7 +690,7 @@ void handleSave() {
   }
   if (server.hasArg("warnung")) { warnungAktiv = server.arg("warnung").toInt() == 1; }
   if (server.hasArg("hostname")) {
-    String neu = server.arg("hostname");
+    String neu = hostnameBereinigen(server.arg("hostname"));
     if (neu.length() > 0 && neu != hostname) { hostname = neu; hostnameGeaendert = true; }
   }
   // Breite/Laenge koennen sich mit jeder Nachkommastelle minimal aendern,
@@ -711,6 +732,20 @@ void handleWifiConnect() {
   wlanVerbinden();
 }
 
+// Erlaubt fuer Hostnamen nur Buchstaben, Ziffern und Bindestrich (gueltige
+// DNS-/mDNS-Label-Zeichen) - alles andere (Leerzeichen, Umlaute, Sonderzeichen)
+// wird entfernt, damit der Name spaeter auch wirklich als "name.local"
+// auffindbar ist.
+String hostnameBereinigen(const String &s) {
+  String out;
+  out.reserve(s.length());
+  for (size_t i = 0; i < s.length(); i++) {
+    char c = s[i];
+    if (isalnum((unsigned char)c) || c == '-') out += c;
+  }
+  return out;
+}
+
 // Prueft per mDNS-Abfrage, ob ein Hostname im aktuell verbundenen Heimnetz
 // schon von einem anderen Geraet benutzt wird - WICHTIG: dafuer erst mit
 // einem Wegwerf-Namen initialisieren, sonst wuerde ein MDNS.begin(h) mit dem
@@ -749,7 +784,7 @@ bool setupWlanVerbindenUndPruefen(const String &ssid, const String &pass,
 void handleSetupConnect() {
   String ssid = server.arg("ssid");
   String pass = server.arg("pass");
-  String wunschHostname = server.arg("hostname");
+  String wunschHostname = hostnameBereinigen(server.arg("hostname"));
   bool hostnameFrei = true;
   bool verbunden = setupWlanVerbindenUndPruefen(ssid, pass, wunschHostname, hostnameFrei);
 
@@ -770,7 +805,7 @@ void handleSetupConnect() {
 // Fuer den Fall "Name schon vergeben": WLAN ist bereits verbunden, nur der
 // Hostname wird erneut geprueft, ohne nochmal neu zu verbinden.
 void handleHostnameCheck() {
-  String wunschHostname = server.arg("hostname");
+  String wunschHostname = hostnameBereinigen(server.arg("hostname"));
   bool frei = true;
   if (WiFi.status() == WL_CONNECTED) {
     frei = hostnameIstFrei(wunschHostname);
@@ -813,12 +848,28 @@ void handleTestWarnung() {
   FastLED.show();
 }
 
+// Expertenmodus: zeigt ein frei gewaehltes Gebet mit frei gewaehltem
+// Prozentsatz ca. 4 Sekunden lang an, um die Ring-Zuordnung zu ueberpruefen.
+void handleTestAnzeige() {
+  int idx = server.arg("gebet").toInt();
+  if (idx < 0 || idx > 4) idx = 0;
+  double anteil = server.arg("prozent").toDouble() / 100.0;
+  if (anteil < 0) anteil = 0;
+  if (anteil > 1) anteil = 1;
+  server.send(200, "text/plain", "ok");
+  anzeigen(idx, anteil);
+  FastLED.show();
+  delay(4000);
+  aktualisieren();
+  FastLED.show();
+}
+
 void handleStandort() {
-  String antwort = "{\"ok\":false}";
+  String antwort;
 
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("Standort: kein WLAN verbunden");
-    server.send(200, "application/json", antwort);
+    server.send(200, "application/json", "{\"ok\":false,\"fehler\":\"kein WLAN verbunden\"}");
     return;
   }
 
@@ -834,7 +885,7 @@ void handleStandort() {
 
   if (!http.begin(client, "https://ipwho.is/")) {
     Serial.println("Standort: http.begin() fehlgeschlagen (URL/Verbindung)");
-    server.send(200, "application/json", antwort);
+    server.send(200, "application/json", "{\"ok\":false,\"fehler\":\"http.begin() fehlgeschlagen\"}");
     return;
   }
 
@@ -855,9 +906,12 @@ void handleStandort() {
                  ",\"laenge\":" + String(lon, 4) + ",\"ort\":\"" + jsonEscape(stadt) + "\"}";
     } else {
       Serial.println("Standort: \"latitude\"/\"longitude\" nicht in der Antwort gefunden");
+      antwort = "{\"ok\":false,\"fehler\":\"HTTP 200, aber kein latitude/longitude in der Antwort: " +
+                jsonEscape(body.substring(0, 120)) + "\"}";
     }
   } else {
     Serial.print("Standort: Fehlertext "); Serial.println(http.errorToString(code));
+    antwort = "{\"ok\":false,\"fehler\":\"HTTP-Code " + String(code) + " (" + jsonEscape(http.errorToString(code)) + ")\"}";
   }
   http.end();
 
@@ -1019,6 +1073,7 @@ void setup() {
   server.on("/updateinstall", HTTP_POST, handleUpdateInstall);
   server.on("/standort", handleStandort);
   server.on("/testwarnung", HTTP_POST, handleTestWarnung);
+  server.on("/testanzeige", HTTP_POST, handleTestAnzeige);
   server.onNotFound(handleRoot);   // fuer Captive-Portal-Erkennung: alles zeigt unsere Seite
   ElegantOTA.begin(&server);   // manueller Update-Weg unter /update
   server.begin();

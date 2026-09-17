@@ -36,6 +36,9 @@ button:disabled{opacity:.55;cursor:default}
 .ssid{flex:1;font-family:"Spline Sans Mono",monospace;font-size:.82rem}
 .wlan-form{display:none;flex-direction:column;gap:10px}
 .wlan-form.offen{display:flex}
+.passwort-zeile{position:relative}
+.passwort-zeile input{padding-right:42px}
+.auge-btn{position:absolute;right:4px;top:4px;bottom:4px;width:34px;background:none;border:none;color:var(--muted);font-size:1.05rem;cursor:pointer;padding:0}
 .info-box{font-size:.8rem;color:var(--text);line-height:1.55;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:12px 13px}
 .info-box.fehler{border-color:var(--danger)}
 .info-box b{color:var(--ember)}
@@ -56,7 +59,7 @@ footer{margin-top:auto;text-align:center;font-size:.68rem;color:var(--muted);fon
 <section class="karte" id="schrittName">
   <h2>Name fuer diese Uhr</h2>
   <input type="text" id="hostnameEingabe" value="gebetsuhr" autocapitalize="off" autocorrect="off" spellcheck="false">
-  <div class="unterzeile">Dieser Name darf nur einmal im WLAN vergeben sein. Falls du mehrere Gebetsuhren einrichtest, gib jeder einen eigenen Namen (z. B. <i>gebetsuhr-kueche</i>).</div>
+  <div class="unterzeile">Nur Buchstaben, Ziffern und Bindestrich. Dieser Name darf nur einmal im WLAN vergeben sein. Falls du mehrere Gebetsuhren einrichtest, gib jeder einen eigenen Namen (z. B. <i>gebetsuhr-kueche</i>).</div>
   <button class="btn-primary btn-block" id="weiterZuWlan">Weiter</button>
 </section>
 
@@ -65,7 +68,10 @@ footer{margin-top:auto;text-align:center;font-size:.68rem;color:var(--muted);fon
   <div class="wlan-liste" id="wlanListe"><div class="wlan-eintrag"><span class="ssid">Suche laeuft…</span></div></div>
   <div class="wlan-form" id="wlanForm">
     <div class="unterzeile">Passwort fuer <span id="wlanAktivName" style="color:var(--text)"></span></div>
-    <input type="password" placeholder="WLAN-Passwort" id="wlanPass">
+    <div class="passwort-zeile">
+      <input type="password" placeholder="WLAN-Passwort" id="wlanPass" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <button type="button" class="auge-btn" id="augeBtn" aria-label="Passwort anzeigen">👁</button>
+    </div>
     <button class="btn-primary btn-block" id="verbindenBtn">Verbinden</button>
     <div class="status-zeile" id="verbindenStatus"></div>
   </div>
@@ -77,6 +83,7 @@ footer{margin-top:auto;text-align:center;font-size:.68rem;color:var(--muted);fon
   <h2>Name schon vergeben</h2>
   <div class="info-box fehler">Der Name "<b id="konfliktName"></b>" wird im WLAN schon von einer anderen Gebetsuhr benutzt. Bitte einen anderen Namen waehlen.</div>
   <input type="text" id="hostnameKorrektur" autocapitalize="off" autocorrect="off" spellcheck="false">
+  <div class="unterzeile">Nur Buchstaben, Ziffern und Bindestrich.</div>
   <button class="btn-primary btn-block" id="erneutPruefenBtn">Erneut pruefen</button>
   <div class="status-zeile" id="konfliktStatus"></div>
 </section>
@@ -101,6 +108,20 @@ function zeigeSchritt(id){
   const punktVon = { schrittName:1, schrittWlan:2, schrittKonflikt:2, schrittFertig:3 };
   for(let i=1;i<=3;i++) document.getElementById('punkt'+i).classList.toggle('aktiv', i===punktVon[id]);
 }
+
+// ---------- Hostname-Felder: nur Buchstaben, Ziffern, Bindestrich ----------
+function hostnameFiltern(e){ e.target.value = e.target.value.replace(/[^A-Za-z0-9-]/g, ''); }
+document.getElementById('hostnameEingabe').addEventListener('input', hostnameFiltern);
+document.getElementById('hostnameKorrektur').addEventListener('input', hostnameFiltern);
+
+// ---------- WLAN-Passwort anzeigen/verstecken ----------
+document.getElementById('augeBtn').addEventListener('click', function(){
+  const feld = document.getElementById('wlanPass');
+  const anzeigen = feld.type === 'password';
+  feld.type = anzeigen ? 'text' : 'password';
+  this.textContent = anzeigen ? '🙈' : '👁';
+  this.setAttribute('aria-label', anzeigen ? 'Passwort verstecken' : 'Passwort anzeigen');
+});
 
 // ---------- Schritt 1: Hostname ----------
 document.getElementById('weiterZuWlan').addEventListener('click', function(){

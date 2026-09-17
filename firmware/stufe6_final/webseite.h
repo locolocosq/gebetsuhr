@@ -9,6 +9,7 @@ const char PAGE_HTML[] PROGMEM = R"HTMLPAGE(
 @media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--ink:#eee5d4;--panel:#faf5ea;--panel-2:#f1e9d8;--line:#ddcfb6;--text:#241a10;--muted:#6e5c47;--ember:#c9591a;--danger:#a8402c;--good:#5c7a45}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
+.mono{font-family:"Spline Sans Mono",monospace}
 body{margin:0;background:var(--ink);color:var(--text);font-family:"Work Sans",system-ui,sans-serif}
 .page{max-width:460px;margin:0 auto;padding:20px 18px 64px;display:flex;flex-direction:column;gap:24px}
 .masthead{display:flex;align-items:baseline;justify-content:space-between}
@@ -38,6 +39,9 @@ button{font-family:"Work Sans",sans-serif;font-weight:600;font-size:.84rem;borde
 .slider-kopf{display:flex;justify-content:space-between;font-size:.82rem}
 .slider-kopf .wert{font-family:"Spline Sans Mono",monospace;color:var(--ember)}
 input[type=range]{width:100%;height:4px;background:var(--line);border-radius:2px}
+.zahl-stepper{display:flex;align-items:center;gap:8px}
+.zahl-stepper button{flex:none;width:38px;height:38px;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);font-size:1.15rem;line-height:1;cursor:pointer}
+.zahl-stepper input[type=number]{flex:1;min-width:0;text-align:center;background:var(--panel-2);border:1px solid var(--line);color:var(--text);font-family:"Spline Sans Mono",monospace;font-size:1rem;padding:9px;border-radius:6px}
 .farb-zeile{display:flex;align-items:center;gap:12px}
 .farb-swatch{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);position:relative;overflow:hidden}
 .farb-swatch input[type=color]{position:absolute;inset:-4px;width:calc(100% + 8px);height:calc(100% + 8px);border:none;padding:0}
@@ -83,7 +87,7 @@ footer{text-align:center;font-size:.68rem;color:var(--muted);font-family:"Spline
   <div class="panel-body">
     <div class="slider-zeile"><span class="feld-label">Expertenmodus</span>
       <div class="toggle-gruppe" id="expertenGruppe"><button data-experte="1">An</button><button data-experte="0" class="aktiv">Aus</button></div>
-      <div class="unterzeile">Schaltet eine getrennte Lichtfarbe für den inneren Ring dazu.</div>
+      <div class="unterzeile">Schaltet eine getrennte Lichtfarbe für den inneren Ring sowie einen Ring-Test dazu.</div>
     </div>
     <div class="slider-zeile">
       <div class="slider-kopf"><label class="feld-label">Helligkeit außen</label><span class="wert" id="hellAussenWert"></span></div>
@@ -107,6 +111,27 @@ footer{text-align:center;font-size:.68rem;color:var(--muted);font-family:"Spline
   </div>
 </section>
 
+<section class="panel" id="ringTestPanel" hidden>
+  <div class="panel-head"><h2>Ring-Test</h2></div>
+  <div class="panel-body">
+    <div class="slider-zeile"><label class="feld-label">Gebet</label>
+      <div class="toggle-gruppe" id="testGebetGruppe">
+        <button data-gebet="0">Fajr</button><button data-gebet="1" class="aktiv">Dhuhr</button>
+        <button data-gebet="2">Asr</button><button data-gebet="3">Maghrib</button><button data-gebet="4">Isha</button>
+      </div>
+    </div>
+    <div class="slider-zeile"><label class="feld-label">Verstrichene Zeit (%)</label>
+      <div class="zahl-stepper">
+        <button type="button" id="testProzentMinus">−</button>
+        <input type="number" id="testProzent" min="0" max="100" value="50">
+        <button type="button" id="testProzentPlus">+</button>
+      </div>
+    </div>
+    <button class="btn-outline btn-block" id="testAnzeigenBtn">Auf der Uhr anzeigen (~4 Sek.)</button>
+    <div class="unterzeile">Zum Überprüfen, ob jedes Gebet wirklich an der richtigen Ring-Position leuchtet.</div>
+  </div>
+</section>
+
 <section class="panel">
   <div class="panel-head"><h2>Gebetszeiten-Berechnung</h2></div>
   <div class="panel-body">
@@ -119,6 +144,7 @@ footer{text-align:center;font-size:.68rem;color:var(--muted);font-family:"Spline
     </div>
     <button class="btn-outline btn-block" id="standortBtn" disabled>Standort automatisch ermitteln</button>
     <div class="unterzeile">Braucht WLAN-Verbindung (schaetzt den Ort anhand der Internetadresse, staedtegenau)</div>
+    <div class="unterzeile mono" id="standortFehler" style="color:var(--danger)" hidden></div>
     <div class="slider-zeile"><span class="feld-label">Asr-Berechnung</span>
       <div class="toggle-gruppe" id="asrGruppe"><button data-asr="0">Standard</button><button data-asr="1">Hanafi</button></div>
     </div>
@@ -210,7 +236,7 @@ function ladeStatus(){
     document.getElementById('gebetName').textContent = s.gebet;
     const h = Math.floor(s.restMin/60), m = s.restMin%60;
     document.getElementById('gebetRest').textContent = Math.round(s.anteil*100)+" % · noch "+h+"h "+m+"min";
-    document.getElementById('ort').textContent = s.breite.toFixed(2)+"° N · "+s.laenge.toFixed(2)+"° O";
+    document.getElementById('ort').textContent = s.wlanVerbunden ? ("Verbunden: "+s.ssid) : "Nicht verbunden";
     document.getElementById('zFajr').textContent = s.zeiten.fajr;
     document.getElementById('zSonnenaufgang').textContent = s.zeiten.sonnenaufgang;
     document.getElementById('zDhuhr').textContent = s.zeiten.dhuhr;
@@ -279,8 +305,10 @@ farbPickerInnen.addEventListener('change', ()=>{
 // ---------- Expertenmodus (nur Anzeige-Einstellung, lokal im Browser gemerkt) ----------
 const expertenGruppe = document.getElementById('expertenGruppe');
 const farbInnenZeile = document.getElementById('farbInnenZeile');
+const ringTestPanel = document.getElementById('ringTestPanel');
 function setzeExpertenmodus(an){
   farbInnenZeile.hidden = !an;
+  ringTestPanel.hidden = !an;
   expertenGruppe.querySelectorAll('button').forEach(b=>b.classList.toggle('aktiv', (b.dataset.experte==="1")===an));
   try { localStorage.setItem('expertenmodus', an ? '1' : '0'); } catch(e){}
 }
@@ -291,9 +319,46 @@ let expertenGespeichert = '0';
 try { expertenGespeichert = localStorage.getItem('expertenmodus') || '0'; } catch(e){}
 setzeExpertenmodus(expertenGespeichert === '1');
 
+// ---------- Ring-Test (Expertenmodus) ----------
+document.querySelectorAll('#testGebetGruppe button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('aktiv'));
+    btn.classList.add('aktiv');
+  });
+});
+const testProzent = document.getElementById('testProzent');
+function testProzentKlammern(){
+  let v = parseInt(testProzent.value, 10);
+  if (isNaN(v)) v = 0;
+  v = Math.max(0, Math.min(100, v));
+  testProzent.value = v;
+}
+testProzent.addEventListener('change', testProzentKlammern);
+document.getElementById('testProzentMinus').addEventListener('click', ()=>{
+  testProzentKlammern();
+  testProzent.value = Math.max(0, parseInt(testProzent.value, 10) - 5);
+});
+document.getElementById('testProzentPlus').addEventListener('click', ()=>{
+  testProzentKlammern();
+  testProzent.value = Math.min(100, parseInt(testProzent.value, 10) + 5);
+});
+document.getElementById('testAnzeigenBtn').addEventListener('click', function(){
+  const gebet = document.querySelector('#testGebetGruppe button.aktiv')?.dataset.gebet || '0';
+  const btn = this;
+  btn.disabled = true;
+  btn.textContent = "Wird angezeigt…";
+  fetch('/testanzeige', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:new URLSearchParams({gebet, prozent: testProzent.value})})
+    .finally(()=>{
+      setTimeout(()=>{ btn.disabled = false; btn.textContent = "Auf der Uhr anzeigen (~4 Sek.)"; }, 4500);
+    });
+});
+
 // ---------- Standort automatisch ----------
 document.getElementById('standortBtn').addEventListener('click', function(){
   const btn = this;
+  const fehlerZeile = document.getElementById('standortFehler');
+  fehlerZeile.hidden = true;
   btn.textContent = "Ermittle…";
   fetch('/standort').then(r=>r.json()).then(d=>{
     if(d.ok){
@@ -302,9 +367,14 @@ document.getElementById('standortBtn').addEventListener('click', function(){
       btn.textContent = d.ort ? ("Gefunden: "+d.ort+" – jetzt speichern") : "Gefunden – jetzt speichern";
     } else {
       btn.textContent = "Fehlgeschlagen, bitte manuell eintragen";
-      setTimeout(()=>{ btn.textContent = "Standort automatisch ermitteln"; }, 3000);
+      fehlerZeile.textContent = "Fehlercode: " + (d.fehler || "unbekannt");
+      fehlerZeile.hidden = false;
     }
-  }).catch(()=>{ btn.textContent = "Fehlgeschlagen, bitte manuell eintragen"; });
+  }).catch((e)=>{
+    btn.textContent = "Fehlgeschlagen, bitte manuell eintragen";
+    fehlerZeile.textContent = "Fehlercode: Anfrage fehlgeschlagen (" + e + ")";
+    fehlerZeile.hidden = false;
+  });
 });
 
 // ---------- Berechnung ----------
@@ -323,7 +393,10 @@ document.getElementById('berechnungSpeichern').addEventListener('click', ()=>{
 });
 
 // ---------- Hostname ----------
-document.getElementById('hostname').addEventListener('input', function(){ document.getElementById('hostPreview').textContent = this.value; });
+document.getElementById('hostname').addEventListener('input', function(){
+  this.value = this.value.replace(/[^A-Za-z0-9-]/g, '');
+  document.getElementById('hostPreview').textContent = this.value;
+});
 document.getElementById('hostnameSpeichern').addEventListener('click', function(){
   fetch('/save', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'hostname='+encodeURIComponent(document.getElementById('hostname').value)})
     .then(()=>{ this.textContent = "Gespeichert, startet neu…"; });
