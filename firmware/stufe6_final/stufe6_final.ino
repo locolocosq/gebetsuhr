@@ -32,7 +32,7 @@
 // ============================================================
 //  Firmware-Version und Update-Quelle
 // ============================================================
-#define FIRMWARE_VERSION "0.6.9"
+#define FIRMWARE_VERSION "0.6.10"
 // HIER SPAETER AUSFUELLEN, sobald das GitHub-Repo mit Releases steht.
 // Erwartetes Format der Datei: {"version":"0.5.1","url":"https://.../firmware.bin"}
 const char* GITHUB_VERSION_URL = "https://raw.githubusercontent.com/locolocosq/gebetsuhr/master/version.json";
@@ -1018,17 +1018,17 @@ bool versucheUpdateCheck(String &antwort) {
   }
 }
 
-// Wie bei der Standort-Abfrage: "connection refused" war trotz reichlich
-// freiem Speicher ein voruebergehender Netzwerk-Aussetzer, kein struktureller
-// Fehler - ein zweiter Versuch behebt das zuverlaessig.
+// "connection refused" war trotz reichlich freiem Speicher da, auch ein
+// einzelner Wiederholungsversuch mit 500ms Abstand hat nicht immer gereicht -
+// deshalb jetzt bis zu 3 Versuche mit etwas mehr Abstand dazwischen.
 void handleUpdateCheck() {
   String antwort = "{\"verfuegbar\":false,\"version\":\"" FIRMWARE_VERSION "\",\"fehler\":\"kein WLAN verbunden\"}";
   letzteUpdateUrl = "";
   if (WiFi.status() == WL_CONNECTED) {
-    if (!versucheUpdateCheck(antwort)) {
-      Serial.println("Update-Check: erster Versuch fehlgeschlagen, versuche erneut...");
-      delay(500);
-      versucheUpdateCheck(antwort);
+    for (int versuch = 1; versuch <= 3; versuch++) {
+      if (versucheUpdateCheck(antwort)) break;
+      Serial.print("Update-Check: Versuch "); Serial.print(versuch); Serial.println(" fehlgeschlagen");
+      if (versuch < 3) delay(800);
     }
   }
   server.send(200, "application/json", antwort);
