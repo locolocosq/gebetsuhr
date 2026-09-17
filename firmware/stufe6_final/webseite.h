@@ -165,6 +165,7 @@ footer{text-align:center;font-size:.68rem;color:var(--muted);font-family:"Spline
       <div class="kv"><span class="k">Status</span><span class="status-pille" id="updateStatus">–</span></div>
     </div>
     <button class="btn-outline btn-block" id="updateBtn">Nach Updates suchen</button>
+    <div class="unterzeile mono" id="updateFehler" style="color:var(--danger)" hidden></div>
     <button class="btn-primary btn-block" id="installUpdateBtn" style="display:none">Update installieren</button>
     <div class="unterzeile">Oder manuell: <a href="/update" style="color:var(--ember)">Firmware-Datei hochladen</a></div>
     <div class="info-box"><b>Reset-Taster:</b> 10 Sek. halten setzt auf Werkseinstellungen zurueck (danach zeigt der naechste Start wieder den Einrichtungs-Assistenten). Kuerzeres Druecken macht nichts.</div>
@@ -405,6 +406,8 @@ document.getElementById('hostnameSpeichern').addEventListener('click', function(
 // ---------- Update ----------
 document.getElementById('updateBtn').addEventListener('click', function(){
   this.textContent = "Pruefe…";
+  const fehlerZeile = document.getElementById('updateFehler');
+  fehlerZeile.hidden = true;
   fetch('/updatecheck').then(r=>r.json()).then(u=>{
     this.textContent = "Nach Updates suchen";
     const p = document.getElementById('updateStatus');
@@ -418,16 +421,34 @@ document.getElementById('updateBtn').addEventListener('click', function(){
       p.classList.add('update');
       installBtn.style.display = 'none';
     } else {
-      p.textContent = "aktuell";
+      p.textContent = u.fehler ? "Fehler bei der Pruefung" : "aktuell";
       p.classList.remove('update');
       installBtn.style.display = 'none';
+      if(u.fehler){
+        fehlerZeile.textContent = "Fehlercode: " + u.fehler;
+        fehlerZeile.hidden = false;
+      }
     }
+  }).catch((e)=>{
+    this.textContent = "Nach Updates suchen";
+    fehlerZeile.textContent = "Fehlercode: Anfrage fehlgeschlagen (" + e + ")";
+    fehlerZeile.hidden = false;
   });
 });
 document.getElementById('installUpdateBtn').addEventListener('click', function(){
-  this.disabled = true;
-  this.textContent = "Installiere… Geraet startet danach neu, bitte nicht ausschalten";
-  fetch('/updateinstall', {method:'POST'}).catch(()=>{});
+  const btn = this;
+  const fehlerZeile = document.getElementById('updateFehler');
+  fehlerZeile.hidden = true;
+  btn.disabled = true;
+  btn.textContent = "Installiere… Geraet startet danach neu, bitte nicht ausschalten";
+  fetch('/updateinstall', {method:'POST'}).then(r=>{
+    if(!r.ok) return r.text().then(t=>{ throw new Error("HTTP "+r.status+": "+t); });
+  }).catch((e)=>{
+    btn.disabled = false;
+    btn.textContent = "Update installieren";
+    fehlerZeile.textContent = "Fehlercode: " + e.message;
+    fehlerZeile.hidden = false;
+  });
 });
 
 // ---------- Werksreset ----------

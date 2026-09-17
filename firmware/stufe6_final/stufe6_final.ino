@@ -32,7 +32,7 @@
 // ============================================================
 //  Firmware-Version und Update-Quelle
 // ============================================================
-#define FIRMWARE_VERSION "0.6.1"
+#define FIRMWARE_VERSION "0.6.2"
 // HIER SPAETER AUSFUELLEN, sobald das GitHub-Repo mit Releases steht.
 // Erwartetes Format der Datei: {"version":"0.5.1","url":"https://.../firmware.bin"}
 const char* GITHUB_VERSION_URL = "https://raw.githubusercontent.com/locolocosq/gebetsuhr/master/version.json";
@@ -258,7 +258,7 @@ void zeichneInnenring(int idx) {
   }
 }
 
-void anzeigen(int idx, double anteil) {
+void anzeigen(int idx, double anteil, bool zeigeInnenring = true) {
   fill_solid(leds, N_GESAMT, CRGB::Black);
 
   CRGB farbeAussen = farbe;
@@ -276,7 +276,7 @@ void anzeigen(int idx, double anteil) {
     leds[p].nscale8((uint8_t)(rest * 255));
   }
 
-  zeichneInnenring(idx);
+  if (zeigeInnenring) zeichneInnenring(idx);
 }
 
 // 15-Minuten-Warnung: zwei Punkte bei 9 und 3 Uhr wachsen symmetrisch nach
@@ -363,7 +363,8 @@ void aktualisieren() {
 
   // Gebet hat gerade gewechselt (und es ist nicht der allererste Aufruf nach
   // dem Einschalten): kurze Abwickel-Animation statt hartem Sprung. Nicht
-  // beim Eintreten in die gebetslose Luecke (da geht's einfach dunkel).
+  // beim Eintreten in die gebetslose Luecke (da bleibt der Innenring einfach
+  // aus, der Aussenring zeigt aber weiter den Fortschritt bis Dhuhr).
   int anzeigeSchluessel = keinGebet ? -1 : idx;
   if (letzterGezeigterIdx != -1 && letzterGezeigterIdx != anzeigeSchluessel && !keinGebet) {
     spieleAbwickelAnimation(idx);
@@ -374,7 +375,9 @@ void aktualisieren() {
     double anteilGewarnt = (15.0 - aktRestMin) / 15.0;
     anzeigenWarnung(idx, anteilGewarnt);
   } else if (keinGebet) {
-    fill_solid(leds, N_GESAMT, CRGB::Black);
+    // Aussenring zeigt weiter den Fortschritt bis Dhuhr, Innenring bleibt
+    // aus (kein Gebet ist gerade aktiv, "Fajr" waere hier falsch).
+    anzeigen(idx, anteil, false);
   } else {
     anzeigen(idx, anteil);
   }
@@ -938,13 +941,22 @@ String jsonWert(const String &body, const String &feld) {
 }
 
 void handleUpdateCheck() {
-  String antwort = "{\"verfuegbar\":false,\"version\":\"" FIRMWARE_VERSION "\"}";
+  String antwort = "{\"verfuegbar\":false,\"version\":\"" FIRMWARE_VERSION "\",\"fehler\":\"kein WLAN verbunden\"}";
   letzteUpdateUrl = "";
   if (WiFi.status() == WL_CONNECTED) {
     WiFiClientSecure client;
     client.setInsecure();   // einfacher Weg ohne Root-Zertifikat, siehe Hinweis in der Doku
+    client.setTimeout(5000);
     HTTPClient https;
-    if (https.begin(client, GITHUB_VERSION_URL)) {
+    https.setConnectTimeout(5000);
+    https.setTimeout(5000);
+    https.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+    // Cache-Buster in der URL: raw.githubusercontent.com haengt hinter einem
+    // CDN, das die Datei unter derselben URL eine Weile zwischenspeichert -
+    // ohne wechselnden Parameter wuerde eine geaenderte version.json sonst
+    // teils noch als alte, gecachte Fassung ausgeliefert.
+    String url = String(GITHUB_VERSION_URL) + "?t=" + String(millis());
+    if (https.begin(client, url)) {
       int code = https.GET();
       if (code == 200) {
         String body = https.getString();
@@ -958,11 +970,17 @@ void handleUpdateCheck() {
                      "\",\"hatUrl\":" + String(letzteUpdateUrl.length() > 0 ? "true" : "false") + "}";
         } else {
           Serial.println("Update-Check: \"version\" nicht in version.json gefunden");
+          antwort = "{\"verfuegbar\":false,\"version\":\"" FIRMWARE_VERSION "\",\"fehler\":\"HTTP 200, aber kein 'version'-Feld: " +
+                    jsonEscape(body.substring(0, 100)) + "\"}";
         }
       } else {
         Serial.print("Update-Check HTTP-Code: "); Serial.println(code);
+        antwort = "{\"verfuegbar\":false,\"version\":\"" FIRMWARE_VERSION "\",\"fehler\":\"HTTP-Code " + String(code) +
+                  " (" + jsonEscape(https.errorToString(code)) + ")\"}";
       }
       https.end();
+    } else {
+      antwort = "{\"verfuegbar\":false,\"version\":\"" FIRMWARE_VERSION "\",\"fehler\":\"https.begin() fehlgeschlagen\"}";
     }
   }
   server.send(200, "application/json", antwort);
@@ -978,7 +996,10 @@ void handleUpdateInstall() {
 
   WiFiClientSecure client;
   client.setInsecure();
+  client.setTimeout(8000);
   HTTPClient https;
+  https.setConnectTimeout(8000);
+  https.setTimeout(8000);
   https.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
 
   if (!https.begin(client, letzteUpdateUrl)) {
@@ -995,10 +1016,15 @@ void handleUpdateInstall() {
   }
 
   int len = https.getSize();
-  if (len <= 0 || !Update.begin(len)) {
-    Serial.println("Update: ungueltige Groesse oder zu wenig Platz");
+  if (len <= 0) {
     https.end();
-    server.send(500, "text/plain", "Zu wenig Platz oder ungueltige Dateigroesse");
+    server.send(500, "text/plain", "Ungueltige Dateigroesse (Content-Length " + String(len) + ")");
+    return;
+  }
+  if (!Update.begin(len)) {
+    Serial.println("Update: zu wenig Platz fuer " + String(len) + " Bytes: " + Update.errorString());
+    https.end();
+    server.send(500, "text/plain", "Zu wenig Platz fuer " + String(len) + " Bytes: " + Update.errorString());
     return;
   }
 
@@ -1014,7 +1040,8 @@ void handleUpdateInstall() {
     ESP.restart();
   } else {
     Serial.print("Update fehlgeschlagen, Fehlercode: "); Serial.println(Update.getError());
-    server.send(500, "text/plain", "Update fehlgeschlagen");
+    server.send(500, "text/plain", "Update fehlgeschlagen: " + String(Update.errorString()) +
+                " (" + String(geschrieben) + "/" + String(len) + " Bytes geschrieben)");
   }
 }
 
