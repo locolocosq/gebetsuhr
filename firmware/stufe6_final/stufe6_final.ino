@@ -32,7 +32,7 @@
 // ============================================================
 //  Firmware-Version und Update-Quelle
 // ============================================================
-#define FIRMWARE_VERSION "0.6.7"
+#define FIRMWARE_VERSION "0.6.8"
 // HIER SPAETER AUSFUELLEN, sobald das GitHub-Repo mit Releases steht.
 // Erwartetes Format der Datei: {"version":"0.5.1","url":"https://.../firmware.bin"}
 const char* GITHUB_VERSION_URL = "https://raw.githubusercontent.com/locolocosq/gebetsuhr/master/version.json";
@@ -970,48 +970,65 @@ String heapInfo() {
          String(ESP.getMaxAllocHeap()) + " Bytes]";
 }
 
+// Ein einzelner Versuch, die version.json zu holen. true = erfolgreich
+// geprueft (verfuegbar oder nicht, aber die Abfrage selbst hat geklappt),
+// false = Verbindung/HTTP ist gescheitert, antwort enthaelt den Fehler.
+bool versucheUpdateCheck(String &antwort) {
+  WiFiClientSecure client;
+  client.setInsecure();   // einfacher Weg ohne Root-Zertifikat, siehe Hinweis in der Doku
+  client.setTimeout(5000);
+  HTTPClient https;
+  https.setConnectTimeout(5000);
+  https.setTimeout(5000);
+  https.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+  // Cache-Buster in der URL: raw.githubusercontent.com haengt hinter einem
+  // CDN, das die Datei unter derselben URL eine Weile zwischenspeichert -
+  // ohne wechselnden Parameter wuerde eine geaenderte version.json sonst
+  // teils noch als alte, gecachte Fassung ausgeliefert.
+  String url = String(GITHUB_VERSION_URL) + "?t=" + String(millis());
+
+  if (!https.begin(client, url)) {
+    antwort = "{\"verfuegbar\":false,\"version\":\"" FIRMWARE_VERSION "\",\"fehler\":\"https.begin() fehlgeschlagen" +
+              jsonEscape(heapInfo()) + "\"}";
+    return false;
+  }
+
+  int code = https.GET();
+  if (code == 200) {
+    String body = https.getString();
+    https.end();
+    String neueVersion = jsonWert(body, "version");
+    if (neueVersion.length() > 0) {
+      bool neuer = neueVersion != FIRMWARE_VERSION;
+      letzteUpdateUrl = jsonWert(body, "url");
+      antwort = "{\"verfuegbar\":" + String(neuer ? "true" : "false") +
+                 ",\"version\":\"" + jsonEscape(neueVersion) +
+                 "\",\"hatUrl\":" + String(letzteUpdateUrl.length() > 0 ? "true" : "false") + "}";
+      return true;
+    } else {
+      antwort = "{\"verfuegbar\":false,\"version\":\"" FIRMWARE_VERSION "\",\"fehler\":\"HTTP 200, aber kein 'version'-Feld: " +
+                jsonEscape(body.substring(0, 100)) + "\"}";
+      return false;
+    }
+  } else {
+    antwort = "{\"verfuegbar\":false,\"version\":\"" FIRMWARE_VERSION "\",\"fehler\":\"HTTP-Code " + String(code) +
+              " (" + jsonEscape(https.errorToString(code)) + ")" + jsonEscape(heapInfo()) + "\"}";
+    https.end();
+    return false;
+  }
+}
+
+// Wie bei der Standort-Abfrage: "connection refused" war trotz reichlich
+// freiem Speicher ein voruebergehender Netzwerk-Aussetzer, kein struktureller
+// Fehler - ein zweiter Versuch behebt das zuverlaessig.
 void handleUpdateCheck() {
   String antwort = "{\"verfuegbar\":false,\"version\":\"" FIRMWARE_VERSION "\",\"fehler\":\"kein WLAN verbunden\"}";
   letzteUpdateUrl = "";
   if (WiFi.status() == WL_CONNECTED) {
-    WiFiClientSecure client;
-    client.setInsecure();   // einfacher Weg ohne Root-Zertifikat, siehe Hinweis in der Doku
-    client.setTimeout(5000);
-    HTTPClient https;
-    https.setConnectTimeout(5000);
-    https.setTimeout(5000);
-    https.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
-    // Cache-Buster in der URL: raw.githubusercontent.com haengt hinter einem
-    // CDN, das die Datei unter derselben URL eine Weile zwischenspeichert -
-    // ohne wechselnden Parameter wuerde eine geaenderte version.json sonst
-    // teils noch als alte, gecachte Fassung ausgeliefert.
-    String url = String(GITHUB_VERSION_URL) + "?t=" + String(millis());
-    if (https.begin(client, url)) {
-      int code = https.GET();
-      if (code == 200) {
-        String body = https.getString();
-        String neueVersion = jsonWert(body, "version");
-        if (neueVersion.length() > 0) {
-          bool neuer = neueVersion != FIRMWARE_VERSION;
-          letzteUpdateUrl = jsonWert(body, "url");
-
-          antwort = "{\"verfuegbar\":" + String(neuer ? "true" : "false") +
-                     ",\"version\":\"" + jsonEscape(neueVersion) +
-                     "\",\"hatUrl\":" + String(letzteUpdateUrl.length() > 0 ? "true" : "false") + "}";
-        } else {
-          Serial.println("Update-Check: \"version\" nicht in version.json gefunden");
-          antwort = "{\"verfuegbar\":false,\"version\":\"" FIRMWARE_VERSION "\",\"fehler\":\"HTTP 200, aber kein 'version'-Feld: " +
-                    jsonEscape(body.substring(0, 100)) + "\"}";
-        }
-      } else {
-        Serial.print("Update-Check HTTP-Code: "); Serial.println(code);
-        antwort = "{\"verfuegbar\":false,\"version\":\"" FIRMWARE_VERSION "\",\"fehler\":\"HTTP-Code " + String(code) +
-                  " (" + jsonEscape(https.errorToString(code)) + ")" + jsonEscape(heapInfo()) + "\"}";
-      }
-      https.end();
-    } else {
-      antwort = "{\"verfuegbar\":false,\"version\":\"" FIRMWARE_VERSION "\",\"fehler\":\"https.begin() fehlgeschlagen" +
-                jsonEscape(heapInfo()) + "\"}";
+    if (!versucheUpdateCheck(antwort)) {
+      Serial.println("Update-Check: erster Versuch fehlgeschlagen, versuche erneut...");
+      delay(500);
+      versucheUpdateCheck(antwort);
     }
   }
   server.send(200, "application/json", antwort);
