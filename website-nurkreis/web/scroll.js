@@ -9,6 +9,15 @@ export function ringFill(progress) {
   return 12 + 88 * clamp(progress);
 }
 
+// Der Innenring des echten Geraets zeigt einen anderen Wert als der
+// Aussenring (nicht dieselbe Zahl in Blau). Auf der Seite bildet er ab,
+// bei welchem der fuenf Gebete man sich gerade befindet - in groben,
+// diskreten Schritten statt fein wie der Aussenring, der kontinuierlich
+// dem Scrollen folgt.
+export function chapterProgress(chapterIndex, chapterCount) {
+  return chapterCount > 1 ? clamp(chapterIndex / (chapterCount - 1)) : 1;
+}
+
 export const mixRgb = (a, b, t) => a.map((n, i) => Math.round(n + (b[i] - n) * t));
 
 function luminance(rgb) {

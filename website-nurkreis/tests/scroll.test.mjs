@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { scrollProgress, ringFill, sceneAt, scenePalette, contrast } from '../web/scroll.js';
+import { scrollProgress, ringFill, chapterProgress, sceneAt, scenePalette, contrast } from '../web/scroll.js';
 
 test('ring starts partially lit and closes only at the bottom of the page', () => {
   assert.equal(ringFill(scrollProgress(0, 5000, 1000)), 12);
@@ -21,6 +21,15 @@ test('reduced motion keeps product fixed while preserving the informative fill',
     assert.equal(scene.shiftX, 0); assert.equal(scene.shiftY, 0); assert.equal(scene.scale, 1);
     assert.equal(scene.fill, ringFill(progress));
   }
+});
+
+test('inner ring advances in discrete chapter steps, independent of the outer ring', () => {
+  assert.equal(chapterProgress(0, 5), 0);
+  assert.equal(chapterProgress(2, 5), 0.5);
+  assert.equal(chapterProgress(4, 5), 1);
+  assert.equal(chapterProgress(0, 1), 1);
+  assert.equal(chapterProgress(-1, 5), 0);
+  assert.equal(chapterProgress(9, 5), 1);
 });
 
 test('text remains readable throughout the light-to-dark transition', () => {
