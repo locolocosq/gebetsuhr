@@ -1,8 +1,9 @@
-import { clamp, scrollProgress, sceneAt, scenePalette, ringFill, chapterProgress } from './scroll.js';
+import { clamp, scrollProgress, sceneAt, scenePalette, innerRingState } from './scroll.js';
 
 const root = document.documentElement;
 const rings = [...document.querySelectorAll('.ring-fill')];
 const innerRings = [...document.querySelectorAll('.ring-fill-inner')];
+const innerRingGroup = document.querySelector('#inner-ring-group');
 const sections = [...document.querySelectorAll('[data-chapter]')];
 const links = [...document.querySelectorAll('.chapter-nav a')];
 const motionButton = document.querySelector('#motion-toggle');
@@ -40,9 +41,9 @@ function render() {
   let current = 0;
   chapterPositions.forEach((position, index) => { if (scrollY + innerHeight * .42 >= position) current = index; });
   if (progress >= .999) current = sections.length - 1;
-  const innerFill = ringFill(chapterProgress(current, sections.length));
-  root.style.setProperty('--fill-inner', innerFill);
-  for (const ring of innerRings) ring.setAttribute('stroke-dasharray', `${innerFill} 100`);
+  const { arc, rotation } = innerRingState(current);
+  innerRingGroup.setAttribute('transform', `rotate(${rotation} 400 400)`);
+  for (const ring of innerRings) ring.setAttribute('stroke-dasharray', `${arc} 100`);
   links.forEach((link, index) => {
     if (index === current) link.setAttribute('aria-current', 'step');
     else link.removeAttribute('aria-current');

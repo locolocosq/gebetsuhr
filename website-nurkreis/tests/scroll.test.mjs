@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { scrollProgress, ringFill, chapterProgress, sceneAt, scenePalette, contrast } from '../web/scroll.js';
+import { scrollProgress, ringFill, innerRingState, sceneAt, scenePalette, contrast } from '../web/scroll.js';
 
 test('ring starts partially lit and closes only at the bottom of the page', () => {
   assert.equal(ringFill(scrollProgress(0, 5000, 1000)), 12);
@@ -23,13 +23,13 @@ test('reduced motion keeps product fixed while preserving the informative fill',
   }
 });
 
-test('inner ring advances in discrete chapter steps, independent of the outer ring', () => {
-  assert.equal(chapterProgress(0, 5), 0);
-  assert.equal(chapterProgress(2, 5), 0.5);
-  assert.equal(chapterProgress(4, 5), 1);
-  assert.equal(chapterProgress(0, 1), 1);
-  assert.equal(chapterProgress(-1, 5), 0);
-  assert.equal(chapterProgress(9, 5), 1);
+test('inner ring is a half circle that points at a fixed compass position per prayer, not a fill level', () => {
+  assert.deepEqual(innerRingState(0), { arc: 50, rotation: -90 });  // Fajr: rechts
+  assert.deepEqual(innerRingState(1), { arc: 50, rotation: -180 }); // Dhuhr: oben
+  assert.deepEqual(innerRingState(2), { arc: 50, rotation: 90 });   // Asr: links
+  assert.deepEqual(innerRingState(3), { arc: 50, rotation: 0 });    // Maghrib: unten
+  assert.deepEqual(innerRingState(4), { arc: 100, rotation: 0 });   // Isha: kein Halbkreis definiert
+  assert.deepEqual(innerRingState(-1), { arc: 100, rotation: 0 });
 });
 
 test('text remains readable throughout the light-to-dark transition', () => {

@@ -9,13 +9,18 @@ export function ringFill(progress) {
   return 12 + 88 * clamp(progress);
 }
 
-// Der Innenring des echten Geraets zeigt einen anderen Wert als der
-// Aussenring (nicht dieselbe Zahl in Blau). Auf der Seite bildet er ab,
-// bei welchem der fuenf Gebete man sich gerade befindet - in groben,
-// diskreten Schritten statt fein wie der Aussenring, der kontinuierlich
-// dem Scrollen folgt.
-export function chapterProgress(chapterIndex, chapterCount) {
-  return chapterCount > 1 ? clamp(chapterIndex / (chapterCount - 1)) : 1;
+// Der Innenring des echten Geraets ist kein Fortschrittsbalken, sondern
+// ein Halbkreis, der je nach Gebet an einer festen Kompass-Position
+// steht (siehe HALB_START in der Firmware): Fajr rechts, Dhuhr oben,
+// Asr links, Maghrib unten. 0 Grad = oben, im Uhrzeigersinn.
+const INNER_RING_COMPASS = [90, 0, 270, 180]; // Fajr, Dhuhr, Asr, Maghrib
+
+export function innerRingState(chapterIndex) {
+  if (chapterIndex < 0 || chapterIndex >= INNER_RING_COMPASS.length) {
+    return { arc: 100, rotation: 0 }; // Isha: kein Halbkreis definiert, Ring geschlossen
+  }
+  const direction = INNER_RING_COMPASS[chapterIndex];
+  return { arc: 50, rotation: direction - 180 };
 }
 
 export const mixRgb = (a, b, t) => a.map((n, i) => Math.round(n + (b[i] - n) * t));
