@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ede9e1">
+  <meta name="description" content="Ein ruhiges Salah Licht fuer dein Zuhause. Entdecke die Idee hinter Nurkreis und erlebe den Lichtkreis beim Scrollen. Ein Produkt in Entwicklung.">
+  <title>Nurkreis — Ein Licht. Dein Rhythmus.</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#inhalt">Zum Inhalt</a>
+  <header class="header">
+    <a class="wordmark" href="#fajr" aria-label="Nurkreis, zum Anfang"><span class="brand-ring" aria-hidden="true"></span>nurkreis<span class="brand-dot">.</span></a>
+    <nav class="header-nav" aria-label="Hauptnavigation"><a href="#dhuhr">Die Idee</a><a href="#asr">Das Objekt</a><button type="button" data-open-details>Projektstand <span aria-hidden="true">↗</span></button></nav>
+    <span class="header-status"><span aria-hidden="true"></span> In Entwicklung</span>
+  </header>
+
+  <div class="scene" aria-hidden="true">
+    <div class="scene-orbit orbit-one"></div><div class="scene-orbit orbit-two"></div>
+    <div class="scene-halo"></div>
+    <div class="product-shadow"></div>
+    <div class="product">
+      <svg class="product-svg" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f8f6f0"/><stop offset=".4" stop-color="#c5bcad"/><stop offset=".7" stop-color="#a69b8b"/><stop offset="1" stop-color="#716456"/></linearGradient>
+          <linearGradient id="rim" x1=".15" y1="0" x2=".85" y2="1"><stop stop-color="#fffdf8"/><stop offset=".32" stop-color="#eee9de"/><stop offset=".7" stop-color="#d6cfc2"/><stop offset="1" stop-color="#bcb2a1"/></linearGradient>
+          <radialGradient id="face" cx=".28" cy=".2" r=".85"><stop stop-color="#ede7db"/><stop offset=".55" stop-color="#d7cdbd"/><stop offset="1" stop-color="#b5a593"/></radialGradient>
+          <linearGradient id="groove" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#6e6050"/><stop offset=".5" stop-color="#b2a28e"/><stop offset="1" stop-color="#f4ebdd"/></linearGradient>
+          <radialGradient id="center" cx=".28" cy=".22" r=".9"><stop stop-color="#e4dccd"/><stop offset="1" stop-color="#c6b9a7"/></radialGradient>
+          <linearGradient id="amber" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffc77c"/><stop offset=".45" stop-color="#ffb353"/><stop offset="1" stop-color="#ff6f21"/></linearGradient>
+          <filter id="warm-glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="11"/></filter>
+          <filter id="cool-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter>
+          <filter id="texture" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".72" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".13"/></feComponentTransfer><feComposite in2="SourceGraphic" operator="in"/><feBlend in="SourceGraphic" mode="soft-light"/></filter>
+        </defs>
+        <circle cx="412" cy="414" r="298" fill="url(#edge)"/>
+        <circle cx="404" cy="404" r="297" fill="url(#rim)" stroke="#d4cbbd" stroke-width="1"/>
+        <circle cx="400" cy="400" r="289" fill="url(#rim)" stroke="#fffaf0" stroke-opacity=".65" stroke-width="2"/>
+        <circle cx="400" cy="400" r="260" fill="url(#groove)"/>
+        <circle cx="400" cy="402" r="248" fill="url(#face)" filter="url(#texture)"/>
+        <circle cx="400" cy="400" r="253" fill="none" stroke="#c7b59c" stroke-width="9"/>
+        <g transform="rotate(-90 400 400)" fill="none" stroke-linecap="round">
+          <circle class="ring-fill ring-aura" cx="400" cy="400" r="253" pathLength="100" stroke="#ff812e" stroke-width="22" stroke-dasharray="12 100" filter="url(#warm-glow)"/>
+          <circle class="ring-fill" cx="400" cy="400" r="253" pathLength="100" stroke="url(#amber)" stroke-width="10" stroke-dasharray="12 100"/>
+          <circle class="ring-fill" cx="400" cy="400" r="253" pathLength="100" stroke="#ffdeb0" stroke-opacity=".84" stroke-width="3.5" stroke-dasharray="12 100"/>
+        </g>
+        <circle cx="400" cy="400" r="154" fill="url(#center)" stroke="#b6afbb" stroke-width="3"/>
+        <circle cx="400" cy="400" r="153" fill="none" stroke="#9faaff" stroke-width="17" opacity=".9" filter="url(#cool-glow)"/>
+        <circle cx="400" cy="400" r="151" fill="none" stroke="#e1e7ff" stroke-width="7"/>
+        <circle cx="400" cy="400" r="151" fill="none" stroke="#fff" stroke-width="3.5"/>
+      </svg>
+    </div>
+    <div class="product-caption"><span class="caption-rule"></span><span>LICHT IN SEINER RUHIGSTEN FORM</span><span class="caption-rule"></span></div>
+  </div>
+
+  <main id="inhalt">
+    <section class="chapter hero" id="fajr" aria-labelledby="title-fajr" data-chapter="0">
+      <div class="chapter-copy">
+        <p class="eyebrow"><span class="tiny-orbit" aria-hidden="true"></span> EIN SALAH LICHT F&Uuml;R DEIN ZUHAUSE</p>
+        <h1 id="title-fajr">Ein Licht.<br>Dein <em>Rhythmus.</em></h1>
+        <p class="lead">Ein stiller Begleiter f&uuml;r die Momente,<br class="desktop-break"> die deinem Tag Bedeutung geben.</p>
+        <a class="pill-button" href="#dhuhr">Das Licht entdecken <span aria-hidden="true">↘</span></a>
+        <div class="scroll-note"><span class="scroll-line" aria-hidden="true"></span> Scrolle. Und lass den Kreis wachsen.</div>
+      </div>
+      <span class="chapter-number" aria-hidden="true">01 / 05</span>
+    </section>
+    <section class="chapter" id="dhuhr" aria-labelledby="title-dhuhr" data-chapter="1">
+      <div class="chapter-copy">
+        <p class="eyebrow">02 &nbsp; / &nbsp; DHUHR &nbsp; / &nbsp; INNEHALTEN</p>
+        <h2 id="title-dhuhr">Mitten im Tag.<br><em>Bei dir.</em></h2>
+        <p class="lead">Zwischen allem, was gerade ist,<br class="desktop-break"> darf Salah sichtbar bleiben.</p>
+        <p class="body-copy">Unsere Idee: Gebetszeiten als ruhiges Licht im Raum. Ein kurzer Blick. Ein bewusster Moment. Ein Platz f&uuml;r das, was dir wichtig ist.</p>
+        <div class="detail-line"><span>01</span><p>Ein Lichtkreis.<br><strong>Eine bewusste Verbindung zum Tag.</strong></p></div>
+      </div>
+      <span class="chapter-number" aria-hidden="true">02 / 05</span>
+    </section>
+    <section class="chapter" id="asr" aria-labelledby="title-asr" data-chapter="2">
+      <div class="chapter-copy">
+        <p class="eyebrow">03 &nbsp; / &nbsp; ASR &nbsp; / &nbsp; ANKOMMEN</p>
+        <h2 id="title-asr">Gemacht f&uuml;r<br><em>deinen Raum.</em></h2>
+        <p class="lead">Klare Form. Warmes Licht.<br>Und Raum zum Durchatmen.</p>
+        <figure class="image-note"><img src="/assets/home.webp" width="1000" height="563" alt="Designvisualisierung des runden Salah Lichtobjekts auf einer hellen Holzkommode" loading="lazy" decoding="async"><figcaption>Eine Idee f&uuml;r Zuhause. <span>Designvisualisierung</span></figcaption></figure>
+      </div>
+      <span class="chapter-number" aria-hidden="true">03 / 05</span>
+    </section>
+    <section class="chapter" id="maghrib" aria-labelledby="title-maghrib" data-chapter="3">
+      <div class="chapter-copy">
+        <p class="eyebrow">04 &nbsp; / &nbsp; MAGHRIB &nbsp; / &nbsp; RUHE</p>
+        <h2 id="title-maghrib">Wenn der Tag<br><em>leiser wird.</em></h2>
+        <p class="lead">Ein warmer Kreis.<br>Ein vertrauter Moment.</p>
+        <p class="body-copy">Aus einer selbstgebauten Gebetsuhr w&auml;chst eine Idee f&uuml;r muslimische Zuhause. Wir entwickeln sie mit Sorgfalt weiter &ndash; in Gestaltung, Technik und im Umgang mit Gebetszeiten.</p>
+        <button class="text-button" type="button" data-open-details>Die Geschichte dahinter <span aria-hidden="true">↗</span></button>
+      </div>
+      <span class="chapter-number" aria-hidden="true">04 / 05</span>
+    </section>
+    <section class="chapter finale" id="isha" aria-labelledby="title-isha" data-chapter="4">
+      <div class="chapter-copy">
+        <p class="eyebrow">05 &nbsp; / &nbsp; ISHA &nbsp; / &nbsp; VERBUNDEN</p>
+        <h2 id="title-isha">Ein Kreis.<br><em>Viele Momente.</em></h2>
+        <p class="lead">Das ist erst der Anfang.<br>Die Idee darf mit dir wachsen.</p>
+        <button class="pill-button" type="button" data-open-details>Das Projekt kennenlernen <span aria-hidden="true">↗</span></button>
+        <p class="end-note">Prototyp in Entwicklung.<br>Name, Funktionen und Verkaufsstart sind noch offen.</p>
+      </div>
+      <footer class="footer"><span>NURKREIS &middot; ARBEITSNAME</span><a href="#fajr">Zur&uuml;ck zum Anfang ↑</a></footer>
+    </section>
+  </main>
+
+  <aside class="journey" aria-label="Kapitel der Produktgeschichte">
+    <div class="journey-meta"><span>EIN TAG. F&Uuml;NF MOMENTE.</span><button type="button" class="motion-button" aria-pressed="false" id="motion-toggle">Bewegung reduzieren</button></div>
+    <nav class="chapter-nav" aria-label="Kapitel"><div class="journey-line" aria-hidden="true"><div class="journey-fill"></div></div><a href="#fajr" aria-current="step"><span class="nav-dot"></span>Fajr</a><a href="#dhuhr"><span class="nav-dot"></span>Dhuhr</a><a href="#asr"><span class="nav-dot"></span>Asr</a><a href="#maghrib"><span class="nav-dot"></span>Maghrib</a><a href="#isha"><span class="nav-dot"></span>Isha</a></nav>
+    <p class="illustration-note">Interaktive Produktillustration &middot; Die F&uuml;llung folgt deinem Scrollen, keinen echten Gebetszeiten.</p>
+  </aside>
+
+  <dialog id="project-dialog" aria-labelledby="dialog-title">
+    <div class="dialog-top"><span class="eyebrow">EIN PROJEKT IM ENTSTEHEN</span><button class="close-button" type="button" aria-label="Projektinformationen schliessen" autofocus>×</button></div>
+    <img class="dialog-image" src="/assets/studio.webp" width="800" height="800" alt="Designreferenz: helles, rundes Gehaeuse mit orangefarbenem Aussenring und hellem Innenring" loading="lazy">
+    <div class="dialog-body"><h2 id="dialog-title">Von einer Idee<br>zu einem <em>Begleiter.</em></h2><p>Am Anfang steht eine selbstgebaute Gebetsuhr: ein 3D-gedrucktes Geh&auml;use, ein ESP32 und LEDs. Daraus m&ouml;chten wir ein ruhiges Salah Licht f&uuml;r Zuhause entwickeln.</p><dl><div><dt>Heute</dt><dd>Ein Hardware-Prototyp und eine gestalterische Vision. Die Bilder und die Animation zeigen Designreferenzen, keine verbindliche Serienausf&uuml;hrung.</dd></div><div><dt>Als N&auml;chstes</dt><dd>Ringlogik, Einrichtung, Helligkeit und Gebetszeitmethoden erproben. Lokale Moscheezeiten und manuelle Korrekturen sind Entwicklungsziele.</dd></div><div><dt>Mit Sorgfalt</dt><dd>Religi&ouml;s relevante Funktionen und Aussagen ben&ouml;tigen eine qualifizierte Pr&uuml;fung. Eine solche Freigabe liegt noch nicht vor. Die Animation ist keine Gebetszeitanzeige.</dd></div><div><dt>Offen bleiben</dt><dd>Name, Preis und Verkaufsstart stehen noch nicht fest. Fragen und Verbesserungen geh&ouml;ren zur Entwicklung.</dd></div></dl><button class="pill-button dialog-return" type="button">Zur&uuml;ck zum Licht <span aria-hidden="true">↗</span></button></div>
+  </dialog>
+  <noscript><div class="noscript-note">Die Produktgeschichte ist auch ohne JavaScript lesbar. F&uuml;r die Scroll-Animation und Projektinformationen aktiviere JavaScript.</div></noscript>
+</body>
+</html>
