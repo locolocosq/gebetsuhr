@@ -7,11 +7,11 @@
 //   - Eigene, schoen gestaltete Webseite (WLAN-Setup + Dauerbetrieb
 //     in einem), passend zum Artefakt-Entwurf
 //   - Tasten-Logik: kurz = WLAN-Setup, lang = Werksreset
-//   - Firmware-Update-Pruefung gegen GitHub (Platzhalter-URL)
+//   - Firmware-Update-Pruefung gegen bitbil.de/update/gebetsuhr
 //
 //  Zusaetzliche Bibliothek noetig (Library Manager):
 //   - ElegantOTA (von Ayush Sharma) - manueller Update-Weg als
-//     Rueckfallebene, solange GitHub-Repo noch nicht steht
+//     Rueckfallebene (manueller Upload)
 //  ESPmDNS, Preferences, HTTPClient, WiFiClientSecure, Update
 //  sind im ESP32-Boardpaket schon enthalten.
 // ============================================================
@@ -32,10 +32,10 @@
 // ============================================================
 //  Firmware-Version und Update-Quelle
 // ============================================================
-#define FIRMWARE_VERSION "0.6.10"
-// HIER SPAETER AUSFUELLEN, sobald das GitHub-Repo mit Releases steht.
-// Erwartetes Format der Datei: {"version":"0.5.1","url":"https://.../firmware.bin"}
-const char* GITHUB_VERSION_URL = "https://raw.githubusercontent.com/locolocosq/gebetsuhr/master/version.json";
+#define FIRMWARE_VERSION "0.7.0"
+// Update-Quelle: eigener Webspace unter bitbil.de.
+// Erwartetes Format der Datei: {"version":"0.7.0","url":"https://bitbil.de/update/gebetsuhr/gebetsuhr-0.7.0.bin"}
+const char* UPDATE_VERSION_URL = "https://bitbil.de/update/gebetsuhr/version.json";
 
 // ============================================================
 //  Pins
@@ -341,8 +341,8 @@ void aktualisieren() {
     // Fajr bis Sonnenaufgang
     idx = 0; start = grenzen[0]; ende = grenzen[1];
   } else if (jetzt < grenzen[2]) {
-    // Sonnenaufgang bis Dhuhr: kein Gebet gerade aktiv, Ringe bleiben aus
-    // (bis auf die 15-Min-Vorwarnung auf das kommende Dhuhr)
+    // Sonnenaufgang bis Dhuhr: kein Gebet gerade aktiv. Innenring bleibt
+    // aus, auch in den letzten 15 Minuten vor Dhuhr (keine Vorwarnung).
     keinGebet = true; idx = 1; start = grenzen[1]; ende = grenzen[2];
   } else if (jetzt < grenzen[3]) {
     idx = 1; start = grenzen[2]; ende = grenzen[3];
@@ -359,7 +359,7 @@ void aktualisieren() {
   if (anteil > 1) anteil = 1;
 
   aktIdx = idx; aktAnteil = anteil; aktRestMin = ende - jetzt; aktKeinGebet = keinGebet;
-  bool baldWarnung = warnungAktiv && aktRestMin > 0 && aktRestMin <= 15;
+  bool baldWarnung = warnungAktiv && !keinGebet && aktRestMin > 0 && aktRestMin <= 15;
 
   // Gebet hat gerade gewechselt (und es ist nicht der allererste Aufruf nach
   // dem Einschalten): kurze Abwickel-Animation statt hartem Sprung. Nicht
@@ -981,11 +981,9 @@ bool versucheUpdateCheck(String &antwort) {
   https.setConnectTimeout(5000);
   https.setTimeout(5000);
   https.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
-  // Cache-Buster in der URL: raw.githubusercontent.com haengt hinter einem
-  // CDN, das die Datei unter derselben URL eine Weile zwischenspeichert -
-  // ohne wechselnden Parameter wuerde eine geaenderte version.json sonst
-  // teils noch als alte, gecachte Fassung ausgeliefert.
-  String url = String(GITHUB_VERSION_URL) + "?t=" + String(millis());
+  // Cache-Buster in der URL, damit eine geaenderte version.json nicht aus
+  // einem Proxy/CDN-Zwischenspeicher als alte Fassung ausgeliefert wird.
+  String url = String(UPDATE_VERSION_URL) + "?t=" + String(millis());
 
   if (!https.begin(client, url)) {
     antwort = "{\"verfuegbar\":false,\"version\":\"" FIRMWARE_VERSION "\",\"fehler\":\"https.begin() fehlgeschlagen" +
