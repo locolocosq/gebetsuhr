@@ -6,7 +6,7 @@ Quellcode: `C:\Dev\gebetsuhr-t5` (TuyaOpen-SDK in `C:\Dev\TuyaOpen`).
 **Wichtig:** Dieser Ordner enthält **nur T5-Firmware** (Beken bk7258). Niemals mit dem
 ESP32-Ordner `esp32/` verwechseln – ein ESP32-Image auf dem T5 (oder umgekehrt) bricked das Gerät.
 
-## Aktuelle Version: 0.9.5
+## Aktuelle Version: 0.9.6
 Gleicher Code wie die ESP32-Uhr (Design 5 „Geometrie", Countdown letzte 15 Min tiefrot,
 Button 1× = Einstellungen auf/zu, nur noch Gebet + Bitcoin). T5-spezifisch:
 - OTA-Partition 2940 KB, Update-Quelle GitHub (dieser Ordner).
