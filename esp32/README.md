@@ -18,7 +18,7 @@ Die Uhr aktualisiert sich **automatisch**:
 - **Wichtig:** Die App muss **klein bleiben** (~2 MB). Große Assets (z. B. Animationen) fressen Flash/RAM
   und können OTA wieder blockieren. Darum wurden GIF-Animation und Gold-Ansicht entfernt.
 
-## Aktuelle Version: 0.9.10
+## Aktuelle Version: 0.9.12
 Design 5 „Geometrie" (Bogenkranz, Ring mit Glow, arab.+lat. Name, großer Inter-Countdown, Uhrzeit-Pille),
 Countdown letzte 15 Min tiefrot, Tearing-Fix (TE-Sync GPIO13), Button 1× = Einstellungen auf/zu,
 stabile Tabellenziffern, nur noch Gebet + Bitcoin (Wisch hoch/runter).
