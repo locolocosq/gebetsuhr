@@ -6,13 +6,19 @@ Quellcode: `C:\Dev\gebetsuhr-t5` (TuyaOpen-SDK in `C:\Dev\TuyaOpen`).
 **Wichtig:** Dieser Ordner enthält **nur T5-Firmware** (Beken bk7258). Niemals mit dem
 ESP32-Ordner `esp32/` verwechseln – ein ESP32-Image auf dem T5 (oder umgekehrt) bricked das Gerät.
 
-## Aktuelle Version: 0.9.6
+## Aktuelle Version: 0.9.7
 Gleicher Code wie die ESP32-Uhr (Design 5 „Geometrie", Countdown letzte 15 Min tiefrot,
 Button 1× = Einstellungen auf/zu, nur noch Gebet + Bitcoin). T5-spezifisch:
 - OTA-Partition 2940 KB, Update-Quelle GitHub (dieser Ordner).
 - WLAN-Einrichtung per Hotspot „Gebetsuhr-Display-Setup" (bei leerem WLAN).
 - Touch-Fix: I2C-Bus-Recovery + längerer Reset beim Start, damit der Touch auch nach einem
   OTA (Soft-Reboot) funktioniert, ohne den Strom ziehen zu müssen.
+
+### Neu in 0.9.7
+- **Mehrere WLANs** (bis zu 4): Das Gerät merkt sich jedes eingerichtete Netz und probiert
+  beim Start alle bekannten durch. Das zuletzt erfolgreiche rückt nach vorne.
+- **Lautstärke in %** direkt im Geräte-Menü (Seite 1), in 10-%-Schritten, mit kurzem Probeton.
+  Einstellungen jetzt auf 3 Seiten verteilt.
 
 ## Updates
 - **Nachts um 3 Uhr** prüft die Uhr `t5/version.json` (über raw.githubusercontent.com) und
